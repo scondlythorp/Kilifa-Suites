@@ -16,17 +16,17 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
-// Public / Guest / Integration endpoints
-router.get('/hardware-spec', getHardwareSpec);
+// Public / Reader endpoints for card tap verification
 router.get('/cards/:cardId', getCardDetails);
-router.post('/cards/create', createCard);
 router.post('/simulate-entry', simulateEntry);
 
 // Protected Staff & Receptionist endpoints
 router.use(authenticateToken);
 
+router.get('/hardware-spec', requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF), getHardwareSpec);
 router.get('/cards', requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF), getAllCards);
 router.get('/logs', requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF), getDoorAuditLogs);
+router.post('/cards/create', requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF), createCard);
 
 router.post(
   '/cards/:cardId/activate',

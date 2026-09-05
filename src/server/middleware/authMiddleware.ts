@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { ApiError } from './errorHandler';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'kilifa_suites_jwt_secret_key_2026_super_secure';
+import { getJwtSecret } from '../config/envConfig';
 
 export interface JWTPayload {
   id: string;
@@ -30,7 +29,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload;
     req.user = decoded;
     next();
   } catch (err) {

@@ -1,4 +1,7 @@
 import { prisma } from '../db/prisma';
+import { isMemoryFallbackAllowed } from '../config/envConfig';
+import { ApiError } from '../middleware/errorHandler';
+import { ContactInquiryStatus } from '@prisma/client';
 
 export interface ContactMessageDTO {
   fullName: string;
@@ -6,54 +9,96 @@ export interface ContactMessageDTO {
   phone?: string;
   subject?: string;
   message: string;
+  ipAddress?: string;
 }
 
-export interface ContactRecord extends ContactMessageDTO {
+export interface ContactRecord {
   id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
   receivedAt: string;
-  status: 'received' | 'processed';
+  status: string;
 }
 
 class ContactService {
   private fallbackMessages: ContactRecord[] = [];
 
   public async createContactMessage(data: ContactMessageDTO): Promise<ContactRecord> {
+    try {
+      const created = await prisma.contactInquiry.create({
+        data: {
+          fullName: data.fullName.trim(),
+          email: data.email.trim().toLowerCase(),
+          phone: data.phone?.trim() || null,
+          subject: (data.subject || 'General Inquiry').trim(),
+          message: data.message.trim(),
+          ipAddress: data.ipAddress || null,
+          status: ContactInquiryStatus.NEW,
+        },
+      });
+
+      return {
+        id: created.id,
+        fullName: created.fullName,
+        email: created.email,
+        phone: created.phone || '',
+        subject: created.subject,
+        message: created.message,
+        receivedAt: created.createdAt.toISOString(),
+        status: created.status,
+      };
+    } catch (err) {
+      if (!isMemoryFallbackAllowed()) {
+        console.error('[CONTACT SERVICE] Prisma persistence failed and memory fallback is disabled:', (err as Error).message);
+        throw new ApiError(503, 'Contact inquiry could not be saved to the database. Please try again shortly.');
+      }
+      console.warn('[CONTACT SERVICE] Prisma record creation failed, using in-memory fallback:', (err as Error).message);
+    }
+
     const id = `cnt-${Date.now()}`;
     const newRecord: ContactRecord = {
       id,
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone || '',
-      subject: data.subject || 'General Inquiry',
-      message: data.message,
+      fullName: data.fullName.trim(),
+      email: data.email.trim().toLowerCase(),
+      phone: data.phone?.trim() || '',
+      subject: (data.subject || 'General Inquiry').trim(),
+      message: data.message.trim(),
       receivedAt: new Date().toISOString(),
-      status: 'received',
+      status: 'NEW',
     };
-
-    try {
-      // Find or create user/notification
-      const user = await prisma.user.findFirst({
-        where: { email: data.email.toLowerCase() },
-      });
-
-      if (user) {
-        await prisma.notification.create({
-          data: {
-            title: `Contact Inquiry: ${data.subject || 'General'}`,
-            message: data.message,
-            userId: user.id,
-          },
-        });
-      }
-    } catch (err) {
-      console.warn('[CONTACT SERVICE] Prisma record creation skipped, using in-memory fallback:', (err as Error).message);
-    }
 
     this.fallbackMessages.push(newRecord);
     return newRecord;
   }
 
   public async getAllMessages(): Promise<ContactRecord[]> {
+    try {
+      const inquiries = await prisma.contactInquiry.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (inquiries && inquiries.length > 0) {
+        return inquiries.map((inq) => ({
+          id: inq.id,
+          fullName: inq.fullName,
+          email: inq.email,
+          phone: inq.phone || '',
+          subject: inq.subject,
+          message: inq.message,
+          receivedAt: inq.createdAt.toISOString(),
+          status: inq.status,
+        }));
+      }
+    } catch (err) {
+      if (!isMemoryFallbackAllowed()) {
+        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
+      }
+      console.warn('[CONTACT SERVICE] Prisma query failed, returning fallback list:', (err as Error).message);
+    }
+
     return this.fallbackMessages;
   }
 }

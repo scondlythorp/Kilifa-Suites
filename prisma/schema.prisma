@@ -29,6 +29,8 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+  CHECKED_IN
+  CHECKED_OUT
 }
 
 enum PaymentStatus {
@@ -173,6 +175,7 @@ model Guest {
 model Booking {
   id                  String        @id @default(uuid())
   bookingReference    String        @unique
+  idempotencyKey      String?       @unique
   fullName            String
   email               String
   phone               String
@@ -195,6 +198,11 @@ model Booking {
 
   payment             Payment?
   accessCard          AccessCard?
+
+  @@index([suiteId, checkIn, checkOut, status])
+  @@index([email])
+  @@index([createdAt])
+  @@index([bookingReference])
 }
 
 model Payment {
@@ -212,6 +220,9 @@ model Payment {
 
   bookingId      String        @unique
   booking        Booking       @relation(fields: [bookingId], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model AccessCard {
@@ -225,6 +236,9 @@ model AccessCard {
 
   bookingId  String           @unique
   booking    Booking          @relation(fields: [bookingId], references: [id])
+
+  @@index([cardNumber])
+  @@index([status])
 }
 
 model Notification {
@@ -236,4 +250,56 @@ model Notification {
 
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+}
+
+enum ContactInquiryStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+model ContactInquiry {
+  id        String               @id @default(uuid())
+  fullName  String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    ContactInquiryStatus @default(NEW)
+  ipAddress String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([status])
+}
+
+enum AccessLogType {
+  ENTRY_GRANTED
+  ENTRY_DENIED
+  CARD_ACTIVATED
+  CARD_REVOKED
+  CARD_ISSUED
+  CHECK_IN
+  CHECK_OUT
+}
+
+model AccessAuditLog {
+  id         String        @id @default(uuid())
+  cardId     String?
+  cardNumber String?
+  doorName   String
+  eventType  AccessLogType
+  success    Boolean       @default(true)
+  notes      String?
+  operatorId String?
+  createdAt  DateTime      @default(now())
+
+  @@index([cardId])
+  @@index([createdAt])
+  @@index([eventType])
 }

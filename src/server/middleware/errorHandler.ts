@@ -34,10 +34,11 @@ export const errorHandler = (
   }
 
   // Fallback for unhandled internal server errors
+  const isProduction = process.env.NODE_ENV === 'production';
   return res.status(500).json({
     status: 'error',
     statusCode: 500,
-    message: err.message || 'Internal Server Error',
+    message: isProduction ? 'An unexpected internal server error occurred. Please contact Kilifa Suites support.' : (err.message || 'Internal Server Error'),
     path: req.originalUrl,
     timestamp,
   });

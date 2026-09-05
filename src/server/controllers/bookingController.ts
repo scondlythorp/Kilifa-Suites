@@ -11,24 +11,32 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       checkIn,
       checkOut,
       guestsCount,
+      suiteId,
       preferredSuite,
       specialRequests,
+      idempotencyKey,
     } = req.body;
 
     const errors: string[] = [];
 
     if (!fullName || typeof fullName !== 'string' || !fullName.trim()) {
       errors.push('fullName is required');
+    } else if (fullName.trim().length < 2 || fullName.trim().length > 100) {
+      errors.push('fullName must be between 2 and 100 characters');
     }
+
     if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errors.push('valid email address is required');
     }
-    if (!phone || typeof phone !== 'string' || phone.trim().length < 5) {
-      errors.push('valid phone number is required');
+
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 5 || phone.trim().length > 30) {
+      errors.push('valid phone number between 5 and 30 characters is required');
     }
+
     if (!checkIn || typeof checkIn !== 'string') {
       errors.push('checkIn date is required (YYYY-MM-DD)');
     }
+
     if (!checkOut || typeof checkOut !== 'string') {
       errors.push('checkOut date is required (YYYY-MM-DD)');
     }
@@ -38,20 +46,37 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       const end = new Date(checkOut);
       if (isNaN(start.getTime())) errors.push('invalid checkIn date format');
       if (isNaN(end.getTime())) errors.push('invalid checkOut date format');
-      if (start >= end) errors.push('checkOut date must be after checkIn date');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (start < today) {
+        errors.push('checkIn date cannot be in the past');
+      }
+
+      if (start >= end) {
+        errors.push('checkOut date must be strictly after checkIn date');
+      }
     }
 
-    if (!guestsCount || typeof guestsCount !== 'number' || guestsCount < 1) {
-      errors.push('guestsCount must be at least 1');
+    const parsedGuests = Number(guestsCount);
+    if (isNaN(parsedGuests) || parsedGuests < 1 || !Number.isInteger(parsedGuests)) {
+      errors.push('guestsCount must be an integer of at least 1');
     }
 
-    if (!preferredSuite || typeof preferredSuite !== 'string') {
-      errors.push('preferredSuite is required');
+    const targetSuiteId = (suiteId || preferredSuite)?.toString().trim();
+    if (!targetSuiteId) {
+      errors.push('suiteId is required');
     }
 
     if (errors.length > 0) {
       throw new ApiError(400, 'Validation Failed', errors);
     }
+
+    const headerIdempotency = req.headers['idempotency-key'] || req.headers['x-idempotency-key'];
+    const resolvedIdempotencyKey = typeof headerIdempotency === 'string'
+      ? headerIdempotency.trim()
+      : (typeof idempotencyKey === 'string' ? idempotencyKey.trim() : undefined);
 
     const booking = await bookingService.createBooking({
       fullName: fullName.trim(),
@@ -59,9 +84,11 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       phone: phone.trim(),
       checkIn,
       checkOut,
-      guestsCount,
-      preferredSuite,
+      guestsCount: parsedGuests,
+      suiteId: targetSuiteId!,
+      preferredSuite: targetSuiteId!,
       specialRequests: specialRequests ? String(specialRequests).trim() : '',
+      idempotencyKey: resolvedIdempotencyKey,
     });
 
     res.status(201).json({

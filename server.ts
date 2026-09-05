@@ -1,7 +1,13 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
+
+import { getJwtSecret, isMemoryFallbackAllowed } from './src/server/config/envConfig';
+import { checkDatabaseConnection } from './src/server/db/prisma';
 
 import suiteRoutes from './src/server/routes/suiteRoutes';
 import bookingRoutes from './src/server/routes/bookingRoutes';
@@ -42,11 +48,25 @@ async function startServer() {
   // Global API Rate Limiting
   app.use('/api', apiGlobalRateLimiter);
 
+  // Validate security configuration on startup
+  try {
+    getJwtSecret();
+  } catch (err: any) {
+    console.error('[CRITICAL SECURITY ERROR]', err.message);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+  }
+
   // Health check endpoint
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', async (req, res) => {
+    const isDbConnected = await checkDatabaseConnection();
     res.status(200).json({
       status: 'ok',
       service: 'Kilifa Suites API',
+      databaseConnected: isDbConnected,
+      memoryFallbackAllowed: isMemoryFallbackAllowed(),
+      environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
     });

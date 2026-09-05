@@ -4,6 +4,7 @@ import { prisma } from '../db/prisma';
 import { BookingStatus, PaymentStatus, PaymentMethod, AccessCardStatus } from '@prisma/client';
 import { accessControlService } from './accessControlService';
 import { notificationService } from './notificationService';
+import { isMemoryFallbackAllowed } from '../config/envConfig';
 
 export interface CreateBookingDTO {
   fullName: string;
@@ -12,8 +13,10 @@ export interface CreateBookingDTO {
   checkIn: string;
   checkOut: string;
   guestsCount: number;
-  preferredSuite: string;
+  suiteId: string;
+  preferredSuite?: string;
   specialRequests?: string;
+  idempotencyKey?: string;
 }
 
 export interface BookingRecord {
@@ -106,32 +109,104 @@ class BookingService {
   ];
 
   public async createBooking(data: CreateBookingDTO): Promise<BookingRecord> {
-    const suite = SUITES_DATA.find(
-      (s) => s.id === data.preferredSuite || s.slug === data.preferredSuite
-    );
-
-    const suiteName = suite ? suite.name : data.preferredSuite;
-    const pricePerNight = suite ? suite.pricePerNight : 120;
+    const targetSuiteId = (data.suiteId || data.preferredSuite)?.trim();
+    if (!targetSuiteId) {
+      throw new ApiError(400, 'Suite identifier (suiteId) is required.');
+    }
 
     const start = new Date(data.checkIn);
     const end = new Date(data.checkOut);
     const diffTime = end.getTime() - start.getTime();
     const nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-    const totalEstimatedPrice = pricePerNight * nights;
 
-    const bookingReference = `KS-${Math.floor(100000 + Math.random() * 900000)}`;
+    // Static fallback lookup if database is unavailable or initializing
+    const staticSuite = SUITES_DATA.find(
+      (s) => s.id === targetSuiteId || s.slug === targetSuiteId
+    );
 
     try {
+      // 1. Resolve Suite Authoritatively from Database
       let dbSuite = await prisma.suite.findFirst({
-        where: { OR: [{ id: data.preferredSuite }, { slug: data.preferredSuite }] },
+        where: {
+          OR: [{ id: targetSuiteId }, { slug: targetSuiteId }],
+        },
       });
 
-      if (!dbSuite) {
-        dbSuite = await prisma.suite.findFirst();
+      // If DB has no suites yet, check static catalog
+      if (!dbSuite && !staticSuite) {
+        throw new ApiError(404, `The requested suite '${targetSuiteId}' was not found.`);
       }
 
-      if (dbSuite) {
-        const guest = await prisma.guest.upsert({
+      const suiteName = dbSuite ? dbSuite.name : staticSuite!.name;
+      const pricePerNight = dbSuite ? dbSuite.pricePerNight : staticSuite!.pricePerNight;
+      const maxOccupancy = dbSuite ? dbSuite.maxOccupancy : staticSuite!.maxOccupancy;
+
+      // Validate occupancy
+      if (data.guestsCount > maxOccupancy) {
+        throw new ApiError(
+          400,
+          `Guest count (${data.guestsCount}) exceeds the maximum occupancy of ${maxOccupancy} for ${suiteName}.`
+        );
+      }
+
+      // Authoritative server-side price calculation
+      const totalEstimatedPrice = pricePerNight * nights;
+
+      // 2. Idempotency Check
+      if (data.idempotencyKey) {
+        const existingByIdempotency = await prisma.booking.findUnique({
+          where: { idempotencyKey: data.idempotencyKey },
+          include: { suite: true, payment: true, accessCard: true },
+        });
+
+        if (existingByIdempotency) {
+          return this.mapPrismaToRecord(existingByIdempotency);
+        }
+      }
+
+      // 3. Rapid duplicate submission check (within 60 seconds by same email for same suite & dates)
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+      const recentDuplicate = await prisma.booking.findFirst({
+        where: {
+          email: data.email.toLowerCase(),
+          suiteId: dbSuite?.id || targetSuiteId,
+          checkIn: start,
+          checkOut: end,
+          createdAt: { gte: oneMinuteAgo },
+        },
+        include: { suite: true, payment: true, accessCard: true },
+      });
+
+      if (recentDuplicate) {
+        return this.mapPrismaToRecord(recentDuplicate);
+      }
+
+      const resolvedSuiteId = dbSuite ? dbSuite.id : targetSuiteId;
+
+      // 4. Overlapping Availability Check & Atomic Reservation Creation
+      const created = await prisma.$transaction(async (tx) => {
+        // Concurrency check: verify no overlapping active bookings exist for this suite
+        const conflictingBooking = await tx.booking.findFirst({
+          where: {
+            suiteId: resolvedSuiteId,
+            status: {
+              in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN],
+            },
+            // Standard date overlap logic: (ExistingStart < RequestedEnd) AND (ExistingEnd > RequestedStart)
+            checkIn: { lt: end },
+            checkOut: { gt: start },
+          },
+        });
+
+        if (conflictingBooking) {
+          throw new ApiError(
+            409,
+            `The requested suite '${suiteName}' is already reserved for the selected dates (${data.checkIn} to ${data.checkOut}). Please select alternative dates or an available suite.`
+          );
+        }
+
+        // Upsert Guest Profile
+        const guest = await tx.guest.upsert({
           where: { email: data.email.toLowerCase() },
           update: {
             fullName: data.fullName,
@@ -146,9 +221,12 @@ class BookingService {
           },
         });
 
-        const created = await prisma.booking.create({
+        const bookingReference = `KS-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        return tx.booking.create({
           data: {
             bookingReference,
+            idempotencyKey: data.idempotencyKey || null,
             fullName: data.fullName,
             email: data.email.toLowerCase(),
             phone: data.phone,
@@ -160,7 +238,7 @@ class BookingService {
             totalEstimatedPrice,
             specialRequests: data.specialRequests || '',
             status: BookingStatus.PENDING,
-            suiteId: dbSuite.id,
+            suiteId: resolvedSuiteId,
             guestId: guest.id,
             payment: {
               create: {
@@ -187,9 +265,11 @@ class BookingService {
             accessCard: true,
           },
         });
+      });
 
-        // Trigger BOOKING_RECEIVED Notification across channels
-        notificationService.notifyBookingReceived({
+      // Trigger BOOKING_RECEIVED Notification across channels
+      notificationService
+        .notifyBookingReceived({
           email: created.email,
           phone: created.phone,
           fullName: created.fullName,
@@ -197,42 +277,59 @@ class BookingService {
           suiteName: created.suite ? created.suite.name : suiteName,
           checkIn: data.checkIn,
           checkOut: data.checkOut,
-        }).catch((err) => console.warn('[NOTIFICATION TRIGGER ERROR]', err));
+        })
+        .catch((err) => console.warn('[NOTIFICATION TRIGGER ERROR]', err));
 
-        return {
-          id: created.id,
-          bookingReference: created.bookingReference,
-          fullName: created.fullName,
-          email: created.email,
-          phone: created.phone,
-          checkIn: created.checkIn.toISOString().split('T')[0],
-          checkOut: created.checkOut.toISOString().split('T')[0],
-          guestsCount: created.guestsCount,
-          preferredSuite: data.preferredSuite,
-          suiteName: created.suite ? created.suite.name : suiteName,
-          pricePerNight: created.pricePerNight,
-          totalNights: created.totalNights,
-          totalEstimatedPrice: created.totalEstimatedPrice,
-          specialRequests: created.specialRequests || '',
-          status: created.status,
-          payment: created.payment ? {
-            id: created.payment.id,
-            amount: created.payment.amount,
-            status: created.payment.status,
-          } : undefined,
-          accessCard: created.accessCard ? {
-            id: created.accessCard.id,
-            cardNumber: created.accessCard.cardNumber,
-            status: created.accessCard.status,
-          } : undefined,
-          createdAt: created.createdAt.toISOString(),
-        };
+      return this.mapPrismaToRecord(created);
+    } catch (err: any) {
+      if (err instanceof ApiError) {
+        throw err;
       }
-    } catch (err) {
-      console.warn('[BOOKING SERVICE] Prisma save failed, using memory store fallback:', (err as Error).message);
+
+      // Check if memory fallback is strictly forbidden
+      if (!isMemoryFallbackAllowed()) {
+        console.error(
+          '[BOOKING SERVICE] Database operation failed and memory fallback is prohibited:',
+          err.message
+        );
+        throw new ApiError(
+          503,
+          'Reservation service is currently undergoing maintenance or database reconnect. Please try again in a few moments.'
+        );
+      }
+
+      console.warn(
+        '[BOOKING SERVICE] Database query failed, evaluating memory fallback:',
+        err.message
+      );
     }
 
+    // Fallback store handling (Development / Prototype Mode Only)
+    if (!staticSuite) {
+      throw new ApiError(404, `Suite '${targetSuiteId}' was not found in catalog.`);
+    }
+
+    // Check overlap in fallback store
+    const hasOverlapInFallback = this.fallbackBookings.some((b) => {
+      if (b.preferredSuite !== targetSuiteId && b.suiteName !== staticSuite.name) return false;
+      if (b.status === 'CANCELLED') return false;
+      const bStart = new Date(b.checkIn).getTime();
+      const bEnd = new Date(b.checkOut).getTime();
+      return bStart < end.getTime() && bEnd > start.getTime();
+    });
+
+    if (hasOverlapInFallback) {
+      throw new ApiError(
+        409,
+        `The requested suite '${staticSuite.name}' is already reserved for the selected dates. Please select alternative dates.`
+      );
+    }
+
+    const pricePerNight = staticSuite.pricePerNight;
+    const totalEstimatedPrice = pricePerNight * nights;
+    const bookingReference = `KS-${Math.floor(100000 + Math.random() * 900000)}`;
     const id = `bkg-${Date.now()}`;
+
     const newBooking: BookingRecord = {
       id,
       bookingReference,
@@ -242,8 +339,8 @@ class BookingService {
       checkIn: data.checkIn,
       checkOut: data.checkOut,
       guestsCount: data.guestsCount,
-      preferredSuite: data.preferredSuite,
-      suiteName,
+      preferredSuite: targetSuiteId,
+      suiteName: staticSuite.name,
       pricePerNight,
       totalNights: nights,
       totalEstimatedPrice,
@@ -270,10 +367,7 @@ class BookingService {
     try {
       const booking = await prisma.booking.findFirst({
         where: {
-          OR: [
-            { id },
-            { bookingReference: id },
-          ],
+          OR: [{ id }, { bookingReference: id }],
         },
         include: {
           suite: true,
@@ -283,36 +377,12 @@ class BookingService {
       });
 
       if (booking) {
-        return {
-          id: booking.id,
-          bookingReference: booking.bookingReference,
-          fullName: booking.fullName,
-          email: booking.email,
-          phone: booking.phone,
-          checkIn: booking.checkIn.toISOString().split('T')[0],
-          checkOut: booking.checkOut.toISOString().split('T')[0],
-          guestsCount: booking.guestsCount,
-          preferredSuite: booking.suiteId,
-          suiteName: booking.suite ? booking.suite.name : 'Royal Suite',
-          pricePerNight: booking.pricePerNight,
-          totalNights: booking.totalNights,
-          totalEstimatedPrice: booking.totalEstimatedPrice,
-          specialRequests: booking.specialRequests || '',
-          status: booking.status,
-          payment: booking.payment ? {
-            id: booking.payment.id,
-            amount: booking.payment.amount,
-            status: booking.payment.status,
-          } : undefined,
-          accessCard: booking.accessCard ? {
-            id: booking.accessCard.id,
-            cardNumber: booking.accessCard.cardNumber,
-            status: booking.accessCard.status,
-          } : undefined,
-          createdAt: booking.createdAt.toISOString(),
-        };
+        return this.mapPrismaToRecord(booking);
       }
     } catch (err) {
+      if (!isMemoryFallbackAllowed()) {
+        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
+      }
       console.warn('[BOOKING SERVICE] Prisma query failed, using memory fallback:', (err as Error).message);
     }
 
@@ -339,36 +409,12 @@ class BookingService {
       });
 
       if (bookings && bookings.length > 0) {
-        return bookings.map((b) => ({
-          id: b.id,
-          bookingReference: b.bookingReference,
-          fullName: b.fullName,
-          email: b.email,
-          phone: b.phone,
-          checkIn: b.checkIn.toISOString().split('T')[0],
-          checkOut: b.checkOut.toISOString().split('T')[0],
-          guestsCount: b.guestsCount,
-          preferredSuite: b.suiteId,
-          suiteName: b.suite ? b.suite.name : 'Royal Suite',
-          pricePerNight: b.pricePerNight,
-          totalNights: b.totalNights,
-          totalEstimatedPrice: b.totalEstimatedPrice,
-          specialRequests: b.specialRequests || '',
-          status: b.status,
-          payment: b.payment ? {
-            id: b.payment.id,
-            amount: b.payment.amount,
-            status: b.payment.status,
-          } : undefined,
-          accessCard: b.accessCard ? {
-            id: b.accessCard.id,
-            cardNumber: b.accessCard.cardNumber,
-            status: b.accessCard.status,
-          } : undefined,
-          createdAt: b.createdAt.toISOString(),
-        }));
+        return bookings.map((b) => this.mapPrismaToRecord(b));
       }
     } catch (err) {
+      if (!isMemoryFallbackAllowed()) {
+        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
+      }
       console.warn('[BOOKING SERVICE] Prisma query failed, returning fallback list:', (err as Error).message);
     }
 
@@ -406,15 +452,17 @@ class BookingService {
           if (updated.accessCard) {
             await accessControlService.activateCard(updated.accessCard.id);
           }
-          notificationService.notifyBookingConfirmed({
-            email: updated.email,
-            phone: updated.phone,
-            fullName: updated.fullName,
-            bookingReference: updated.bookingReference,
-            suiteName: updated.suite ? updated.suite.name : 'Kilifa Suite',
-            checkIn: updated.checkIn.toISOString().split('T')[0],
-            checkOut: updated.checkOut.toISOString().split('T')[0],
-          }).catch((err) => console.warn('[NOTIFICATION ERROR]', err));
+          notificationService
+            .notifyBookingConfirmed({
+              email: updated.email,
+              phone: updated.phone,
+              fullName: updated.fullName,
+              bookingReference: updated.bookingReference,
+              suiteName: updated.suite ? updated.suite.name : 'Kilifa Suite',
+              checkIn: updated.checkIn.toISOString().split('T')[0],
+              checkOut: updated.checkOut.toISOString().split('T')[0],
+            })
+            .catch((err) => console.warn('[NOTIFICATION ERROR]', err));
         } else if (normalizedStatus === 'CHECKED_IN') {
           if (updated.accessCard) {
             await accessControlService.processGuestCheckIn(updated.accessCard.id);
@@ -427,34 +475,18 @@ class BookingService {
           if (updated.accessCard) {
             await accessControlService.processGuestCheckOut(updated.accessCard.id);
           }
-          notificationService.notifyBookingCancellation({
-            email: updated.email,
-            phone: updated.phone,
-            fullName: updated.fullName,
-            bookingReference: updated.bookingReference,
-            suiteName: updated.suite ? updated.suite.name : 'Kilifa Suite',
-          }).catch((err) => console.warn('[NOTIFICATION ERROR]', err));
+          notificationService
+            .notifyBookingCancellation({
+              email: updated.email,
+              phone: updated.phone,
+              fullName: updated.fullName,
+              bookingReference: updated.bookingReference,
+              suiteName: updated.suite ? updated.suite.name : 'Kilifa Suite',
+            })
+            .catch((err) => console.warn('[NOTIFICATION ERROR]', err));
         }
 
-        const resRecord: BookingRecord = {
-          id: updated.id,
-          bookingReference: updated.bookingReference,
-          fullName: updated.fullName,
-          email: updated.email,
-          phone: updated.phone,
-          checkIn: updated.checkIn.toISOString().split('T')[0],
-          checkOut: updated.checkOut.toISOString().split('T')[0],
-          guestsCount: updated.guestsCount,
-          preferredSuite: updated.suiteId,
-          suiteName: updated.suite ? updated.suite.name : 'Royal Suite',
-          pricePerNight: updated.pricePerNight,
-          totalNights: updated.totalNights,
-          totalEstimatedPrice: updated.totalEstimatedPrice,
-          specialRequests: updated.specialRequests || '',
-          status: updated.status,
-          createdAt: updated.createdAt.toISOString(),
-        };
-
+        const resRecord = this.mapPrismaToRecord(updated);
         const idx = this.fallbackBookings.findIndex((b) => b.id === id || b.bookingReference === id);
         if (idx !== -1) {
           this.fallbackBookings[idx] = resRecord;
@@ -463,6 +495,9 @@ class BookingService {
         return resRecord;
       }
     } catch (err) {
+      if (!isMemoryFallbackAllowed()) {
+        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
+      }
       console.warn('[BOOKING SERVICE] Prisma status update failed, updating memory fallback:', (err as Error).message);
     }
 
@@ -479,6 +514,41 @@ class BookingService {
     }
 
     throw new ApiError(404, `Booking '${id}' not found`);
+  }
+
+  private mapPrismaToRecord(b: any): BookingRecord {
+    return {
+      id: b.id,
+      bookingReference: b.bookingReference,
+      fullName: b.fullName,
+      email: b.email,
+      phone: b.phone,
+      checkIn: b.checkIn instanceof Date ? b.checkIn.toISOString().split('T')[0] : b.checkIn,
+      checkOut: b.checkOut instanceof Date ? b.checkOut.toISOString().split('T')[0] : b.checkOut,
+      guestsCount: b.guestsCount,
+      preferredSuite: b.suiteId,
+      suiteName: b.suite ? b.suite.name : 'Royal Suite',
+      pricePerNight: b.pricePerNight,
+      totalNights: b.totalNights,
+      totalEstimatedPrice: b.totalEstimatedPrice,
+      specialRequests: b.specialRequests || '',
+      status: b.status,
+      payment: b.payment
+        ? {
+            id: b.payment.id,
+            amount: b.payment.amount,
+            status: b.payment.status,
+          }
+        : undefined,
+      accessCard: b.accessCard
+        ? {
+            id: b.accessCard.id,
+            cardNumber: b.accessCard.cardNumber,
+            status: b.accessCard.status,
+          }
+        : undefined,
+      createdAt: b.createdAt instanceof Date ? b.createdAt.toISOString() : b.createdAt,
+    };
   }
 }
 

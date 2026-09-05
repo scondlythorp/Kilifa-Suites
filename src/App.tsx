@@ -14,15 +14,32 @@ import { LocationPage } from './pages/LocationPage';
 import { ContactPage } from './pages/ContactPage';
 import { BookingPage } from './pages/BookingPage';
 import { SecurityPage } from './pages/SecurityPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
+
+// Lazy-load Admin Dashboard to isolate admin logic from the public guest bundle
+const AdminDashboardPage = React.lazy(() =>
+  import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage }))
+);
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Admin Management Route */}
-          <Route path="/admin" element={<AdminDashboardPage />} />
+          {/* Admin Management Route - Code-split from public bundle */}
+          <Route
+            path="/admin"
+            element={
+              <React.Suspense
+                fallback={
+                  <div className="min-h-screen bg-[#070B14] flex items-center justify-center text-[#C5A059] font-mono text-xs tracking-widest uppercase">
+                    Initializing Kilifa Suites Portal...
+                  </div>
+                }
+              >
+                <AdminDashboardPage />
+              </React.Suspense>
+            }
+          />
 
           {/* Public Guest Pages */}
           <Route

@@ -3,17 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Role } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { ApiError } from '../middleware/errorHandler';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'kilifa_suites_jwt_secret_key_2026_super_secure';
-
-function getJwtExpiresIn(): jwt.SignOptions['expiresIn'] {
-  const raw = process.env.JWT_EXPIRES_IN?.trim();
-  if (!raw) return '24h';
-  if (/^\d+$/.test(raw)) {
-    return parseInt(raw, 10);
-  }
-  return raw as jwt.SignOptions['expiresIn'];
-}
+import { getJwtSecret, getJwtExpiresIn, isMemoryFallbackAllowed } from '../config/envConfig';
 
 export interface UserDTO {
   id: string;
@@ -86,7 +76,7 @@ class AuthService {
 
       if (user && user.password) {
         const passwordMatches = await bcrypt.compare(password, user.password);
-        if (!passwordMatches && password !== 'KilifaPass2026!') {
+        if (!passwordMatches) {
           throw new ApiError(401, 'Invalid credentials. Please verify your login details.');
         }
 
@@ -97,7 +87,9 @@ class AuthService {
           role: user.role,
         };
 
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: getJwtExpiresIn() });
+        const token = jwt.sign(payload, getJwtSecret(), {
+          expiresIn: getJwtExpiresIn() as any,
+        });
 
         return {
           token,
@@ -112,7 +104,15 @@ class AuthService {
       }
     } catch (err) {
       if (err instanceof ApiError) throw err;
+      if (!isMemoryFallbackAllowed()) {
+        console.error('[AUTH SERVICE] Primary database unavailable and memory fallback is disabled:', (err as Error).message);
+        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
+      }
       console.warn('[AUTH SERVICE] Database check failed, falling back to in-memory account directory:', (err as Error).message);
+    }
+
+    if (!isMemoryFallbackAllowed()) {
+      throw new ApiError(401, 'Invalid credentials. Account not found.');
     }
 
     // Flexible fallback account search by email, username prefix, full name, or role name
@@ -125,11 +125,8 @@ class AuthService {
     });
 
     if (fallbackUser) {
-      // Validate password
-      const isPassValid =
-        password === fallbackUser.pass ||
-        password === 'KilifaPass2026!' ||
-        password.trim().length > 0;
+      // Validate password strictly
+      const isPassValid = password === fallbackUser.pass;
 
       if (!isPassValid) {
         throw new ApiError(401, 'Invalid credentials. Please verify your login details.');
@@ -142,7 +139,9 @@ class AuthService {
         role: fallbackUser.role,
       };
 
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: getJwtExpiresIn() });
+      const token = jwt.sign(payload, getJwtSecret(), {
+        expiresIn: getJwtExpiresIn() as any,
+      });
 
       return {
         token,
@@ -155,7 +154,7 @@ class AuthService {
       };
     }
 
-    throw new ApiError(401, 'Invalid credentials. Account not found. Try entering owner, admin, receptionist, or your email.');
+    throw new ApiError(401, 'Invalid credentials. Account not found.');
   }
 
   /**
@@ -177,6 +176,10 @@ class AuthService {
         };
       }
     } catch (err) {
+      if (err instanceof ApiError) throw err;
+      if (!isMemoryFallbackAllowed()) {
+        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
+      }
       console.warn('[AUTH SERVICE] Database query for profile failed, searching fallback users:', (err as Error).message);
     }
 

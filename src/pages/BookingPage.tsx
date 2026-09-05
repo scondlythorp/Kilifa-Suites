@@ -78,6 +78,7 @@ export const BookingPage: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdBooking, setCreatedBooking] = useState<any | null>(null);
   const [paymentResult, setPaymentResult] = useState<any | null>(null);
 
@@ -169,21 +170,20 @@ export const BookingPage: React.FC = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
-      // 1. Submit Booking to REST API
+      // 1. Submit Booking to REST API with canonical suiteId & backwards compatibility alias
       const bookingPayload = {
-        fullName,
-        email,
-        phone,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
         checkIn,
         checkOut,
         guestsCount,
-        pricePerNight: selectedSuite.pricePerNight,
-        totalNights: nightCount,
-        totalEstimatedPrice: totalPrice,
-        specialRequests,
-        suiteId: selectedSuite.id,
+        suiteId: selectedSuite.id, // Canonical identifier
+        preferredSuite: selectedSuite.id, // Backwards-compatible alias
+        specialRequests: specialRequests.trim(),
       };
 
       const bookingRes = await api.bookings.create(bookingPayload);
@@ -194,21 +194,26 @@ export const BookingPage: React.FC = () => {
       const paymentRes = await api.payments.initiate({
         bookingId: bookingData.id,
         bookingReference: bookingData.bookingReference,
-        amount: totalPrice,
+        amount: bookingData.totalEstimatedPrice || totalPrice,
         currency: 'USD',
         provider: selectedProvider,
-        guestName: fullName,
-        guestEmail: email,
-        guestPhone: phone,
-        notes: specialRequests,
+        guestName: fullName.trim(),
+        guestEmail: email.trim(),
+        guestPhone: phone.trim(),
+        notes: specialRequests.trim(),
       });
 
       setPaymentResult(paymentRes.data || paymentRes);
       setSubmitted(true);
-    } catch (err) {
+      setSubmitError(null);
+    } catch (err: any) {
       console.error('[BOOKING PAYMENT ERROR]', err);
-      // Fallback submission display
-      setSubmitted(true);
+      // Strictly prevent false booking success!
+      setSubmitted(false);
+      setSubmitError(
+        err?.message ||
+          'Your reservation request could not be processed. Please check your details or try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -610,6 +615,18 @@ export const BookingPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
+
+                    {submitError && (
+                      <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-sm flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="font-semibold text-red-100 text-xs uppercase tracking-wider">
+                            Reservation Request Failed
+                          </p>
+                          <p className="text-xs text-red-200/90 leading-relaxed">{submitError}</p>
+                        </div>
+                      </div>
+                    )}
 
                     <Button
                       type="submit"
