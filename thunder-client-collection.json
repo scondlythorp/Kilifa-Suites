@@ -1,0 +1,124 @@
+{
+  "clientName": "Thunder Client",
+  "collectionName": "Kilifa Suites REST API",
+  "dateExported": "2026-08-09T15:00:00.000Z",
+  "version": "1.1",
+  "folders": [
+    {
+      "_id": "folder_suites",
+      "name": "Suites API",
+      "containerId": "",
+      "created": "2026-08-09T15:00:00.000Z"
+    },
+    {
+      "_id": "folder_bookings",
+      "name": "Bookings API",
+      "containerId": "",
+      "created": "2026-08-09T15:00:00.000Z"
+    },
+    {
+      "_id": "folder_guests",
+      "name": "Guests API",
+      "containerId": "",
+      "created": "2026-08-09T15:00:00.000Z"
+    },
+    {
+      "_id": "folder_contact",
+      "name": "Contact API",
+      "containerId": "",
+      "created": "2026-08-09T15:00:00.000Z"
+    },
+    {
+      "_id": "folder_media",
+      "name": "Media API",
+      "containerId": "",
+      "created": "2026-08-09T15:00:00.000Z"
+    }
+  ],
+  "requests": [
+    {
+      "_id": "req_suites_get_all",
+      "colId": "col_kilifa",
+      "containerId": "folder_suites",
+      "name": "Get All Suites",
+      "url": "http://localhost:3000/api/suites",
+      "method": "GET"
+    },
+    {
+      "_id": "req_suites_get_by_id",
+      "colId": "col_kilifa",
+      "containerId": "folder_suites",
+      "name": "Get Suite by ID",
+      "url": "http://localhost:3000/api/suites/suite-01",
+      "method": "GET"
+    },
+    {
+      "_id": "req_bookings_post",
+      "colId": "col_kilifa",
+      "containerId": "folder_bookings",
+      "name": "Create Booking Request",
+      "url": "http://localhost:3000/api/bookings",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"fullName\": \"Musa Njie\",\n  \"email\": \"musa.njie@example.com\",\n  \"phone\": \"+220 700 0000\",\n  \"checkIn\": \"2026-08-20\",\n  \"checkOut\": \"2026-08-25\",\n  \"guestsCount\": 2,\n  \"preferredSuite\": \"suite-01\",\n  \"specialRequests\": \"Airport shuttle pickup & quiet room requested\"\n}"
+      }
+    },
+    {
+      "_id": "req_bookings_get_by_id",
+      "colId": "col_kilifa",
+      "containerId": "folder_bookings",
+      "name": "Get Booking by ID / Reference",
+      "url": "http://localhost:3000/api/bookings/bkg-demo-101",
+      "method": "GET"
+    },
+    {
+      "_id": "req_guests_get_all",
+      "colId": "col_kilifa",
+      "containerId": "folder_guests",
+      "name": "Get All Guest Profiles",
+      "url": "http://localhost:3000/api/guests",
+      "method": "GET"
+    },
+    {
+      "_id": "req_guests_get_by_id",
+      "colId": "col_kilifa",
+      "containerId": "folder_guests",
+      "name": "Get Guest Profile by ID",
+      "url": "http://localhost:3000/api/guests/gst-101",
+      "method": "GET"
+    },
+    {
+      "_id": "req_contact_post",
+      "colId": "col_kilifa",
+      "containerId": "folder_contact",
+      "name": "Submit Contact Message",
+      "url": "http://localhost:3000/api/contact",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"fullName\": \"Fatou Sow\",\n  \"email\": \"fatou.sow@example.com\",\n  \"phone\": \"+220 711 1111\",\n  \"subject\": \"Corporate Group Booking Inquiry\",\n  \"message\": \"We are interested in booking House 1 for a 5-day leadership retreat.\"\n}"
+      }
+    },
+    {
+      "_id": "req_media_get_all",
+      "colId": "col_kilifa",
+      "containerId": "folder_media",
+      "name": "Get All Media Gallery Items",
+      "url": "http://localhost:3000/api/media",
+      "method": "GET"
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary: #C5A059;
+    --color-primary-hover: #D4AF66;
+    --color-secondary: #C5A059;
+    --color-secondary-hover: #D4AF66;
+    --color-accent: #C5A059;
+    --color-accent-light: #1F1B12;
+    --color-background: #0A0A0A;
+    --color-surface: #111111;
+    --color-surface-subtle: #161616;
+    --color-text: #FFFFFF;
+    --color-text-muted: #A0A0A0;
+    --color-border: #262626;
+    --color-border-dark: #333333;
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Typography Hierarchy Utilities */
+.font-display {
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+.text-style-display {
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+  font-size: clamp(2.5rem, 5vw, 4.25rem);
+  line-height: 1.1;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+
+.text-style-h1 {
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+  font-size: clamp(2rem, 3.8vw, 3.25rem);
+  line-height: 1.15;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.015em;
+}
+
+.text-style-h2 {
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+  font-size: clamp(1.6rem, 2.8vw, 2.25rem);
+  line-height: 1.25;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.text-style-h3 {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.text-style-h4 {
+  font-size: clamp(1.1rem, 1.5vw, 1.25rem);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.text-style-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.text-style-caption {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.text-style-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.text-style-button {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.text-style-nav {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* Glass & Card Effects */
+.bg-kilifa-surface {
+  background-color: var(--color-surface);
+}
+
+.bg-kilifa-surface-subtle {
+  background-color: var(--color-surface-subtle);
+}
+
+.bg-kilifa-primary {
+  background-color: var(--color-surface);
+}
+
+.text-kilifa-primary {
+  color: var(--color-accent);
+}
+
+.border-kilifa {
+  border-color: var(--color-border);
+}
+
+.border-kilifa-accent {
+  border-color: var(--color-accent);
+}
+
+.shadow-kilifa-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.shadow-kilifa-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shadow-kilifa-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -4px rgba(197, 160, 89, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.5);
+  border-color: rgba(197, 160, 89, 0.4);
+}

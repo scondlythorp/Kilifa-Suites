@@ -1,0 +1,239 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  RECEPTIONIST
+  STAFF
+  GUEST
+}
+
+enum StaffRole {
+  OWNER
+  MANAGER
+  CONCIERGE
+  HOSPITALITY
+  SECURITY
+  OPERATIONS
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_PAID
+  COMPLETED
+}
+
+enum PaymentMethod {
+  WAVE
+  AFRIMONEY
+  APS_WALLET
+  VISA_CARD
+  PAYPAL
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  MOBILE_MONEY
+}
+
+enum AccessCardStatus {
+  INACTIVE
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?
+  name      String
+  role      Role     @default(GUEST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guest         Guest?
+  notifications Notification[]
+}
+
+model Staff {
+  id          String    @id @default(uuid())
+  name        String
+  title       String?
+  position    String?
+  bio         String
+  avatar      String
+  role        StaffRole @default(HOSPITALITY)
+  department  String?
+  order       Int       @default(0)
+  email       String?
+  phone       String?
+  whatsapp    String?
+  linkedin    String?
+  twitter     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model House {
+  id          String   @id @default(uuid())
+  houseNumber Int      @unique
+  title       String
+  description String
+  totalSuites Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  suites      Suite[]
+}
+
+model Suite {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  name          String
+  houseNumber   Int
+  floor         String
+  pricePerNight Float
+  maxOccupancy  Int
+  bedrooms      Int
+  bathrooms     Int
+  parlor        Boolean  @default(true)
+  description   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  houseId       String?
+  house         House?   @relation(fields: [houseId], references: [id])
+
+  amenities     Amenity[]
+  bookings      Booking[]
+}
+
+model Amenity {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  icon        String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  suites      Suite[]
+}
+
+model Media {
+  id        String    @id @default(uuid())
+  title     String
+  url       String
+  type      MediaType @default(IMAGE)
+  category  String
+  caption   String?
+  createdAt DateTime  @default(now())
+}
+
+model Guest {
+  id            String   @id @default(uuid())
+  fullName      String
+  email         String   @unique
+  phone         String
+  country       String?  @default("The Gambia")
+  vipStatus     Boolean  @default(false)
+  totalBookings Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id])
+
+  bookings      Booking[]
+}
+
+model Booking {
+  id                  String        @id @default(uuid())
+  bookingReference    String        @unique
+  fullName            String
+  email               String
+  phone               String
+  checkIn             DateTime
+  checkOut            DateTime
+  guestsCount         Int
+  pricePerNight       Float
+  totalNights         Int
+  totalEstimatedPrice Float
+  specialRequests     String?
+  status              BookingStatus @default(PENDING)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  suiteId             String
+  suite               Suite         @relation(fields: [suiteId], references: [id])
+
+  guestId             String?
+  guest               Guest?        @relation(fields: [guestId], references: [id])
+
+  payment             Payment?
+  accessCard          AccessCard?
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  amount         Float
+  paidAmount     Float         @default(0)
+  currency       String        @default("USD")
+  status         PaymentStatus @default(PENDING)
+  method         PaymentMethod @default(CASH)
+  provider       String        @default("CASH")
+  transactionRef String?
+  paymentNotes   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  bookingId      String        @unique
+  booking        Booking       @relation(fields: [bookingId], references: [id])
+}
+
+model AccessCard {
+  id         String           @id @default(uuid())
+  cardNumber String           @unique
+  pinCode    String
+  status     AccessCardStatus @default(INACTIVE)
+  validFrom  DateTime
+  validUntil DateTime
+  createdAt  DateTime         @default(now())
+
+  bookingId  String           @unique
+  booking    Booking          @relation(fields: [bookingId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
