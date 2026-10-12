@@ -137,4 +137,9 @@ export const api = {
     getReport: (timeframe?: string) =>
       apiRequest(`/analytics/report${timeframe ? '?timeframe=' + timeframe : ''}`),
   },
+  contact: {
+    sendMessage: (data: { fullName: string; email: string; phone?: string; subject?: string; message: string }) =>
+      apiRequest('/contact', { method: 'POST', body: JSON.stringify(data) }),
+    getAll: () => apiRequest('/contact'),
+  },
 };

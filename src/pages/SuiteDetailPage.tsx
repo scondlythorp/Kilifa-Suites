@@ -33,7 +33,15 @@ import {
 
 export const SuiteDetailPage: React.FC = () => {
   const { suiteSlug } = useParams<{ suiteSlug: string }>();
-  const suite = SUITES_DATA.find((s) => s.slug === suiteSlug || s.id === suiteSlug);
+  const normalizedSlug = suiteSlug?.toLowerCase().trim();
+  const suite = SUITES_DATA.find(
+    (s) =>
+      s.slug.toLowerCase() === normalizedSlug ||
+      s.id.toLowerCase() === normalizedSlug ||
+      s.name.toLowerCase() === normalizedSlug ||
+      s.id.toLowerCase().replace('-0', '-') === normalizedSlug ||
+      s.slug.toLowerCase().replace('-0', '-') === normalizedSlug
+  );
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);

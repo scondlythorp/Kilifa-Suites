@@ -23,7 +23,7 @@ export const BUSINESS_CONFIG: BusinessConfig = {
     phoneFormatted: '+220 (700) 1234',
     whatsapp: '+2207001234',
     whatsappUrl: 'https://wa.me/2207001234?text=Hello%20Kilifa%20Suites%2C%20I%20would%20like%20to%20inquire%20about%20a%20suite%20reservation.',
-    email: 'info@kilifasuites.com',
+    email: 'modoulaminthorp4@gmail.com',
   },
   socials: {
     instagram: 'https://instagram.com/kilifasuites',

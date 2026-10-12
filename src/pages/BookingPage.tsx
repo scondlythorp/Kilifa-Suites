@@ -69,15 +69,34 @@ export const BookingPage: React.FC = () => {
     return d;
   }, []);
 
+  const normalizedPreSelected = preSelectedSuiteSlug?.toLowerCase().trim();
+  const matchedPreSelectedSuite = normalizedPreSelected
+    ? SUITES_DATA.find(
+        (s) =>
+          s.slug.toLowerCase() === normalizedPreSelected ||
+          s.id.toLowerCase() === normalizedPreSelected ||
+          s.name.toLowerCase() === normalizedPreSelected ||
+          s.id.toLowerCase().replace('-0', '-') === normalizedPreSelected
+      )
+    : null;
+
   const [selectedSuiteId, setSelectedSuiteId] = useState<string>(
-    preSelectedSuiteSlug
-      ? SUITES_DATA.find((s) => s.slug === preSelectedSuiteSlug || s.id === preSelectedSuiteSlug)?.id || SUITES_DATA[0].id
-      : SUITES_DATA[0].id
+    matchedPreSelectedSuite ? matchedPreSelectedSuite.id : SUITES_DATA[0].id
   );
 
-  const [checkIn, setCheckIn] = useState<string>(formatDate(tomorrow));
-  const [checkOut, setCheckOut] = useState<string>(formatDate(threeDaysLater));
-  const [guestsCount, setGuestsCount] = useState<number>(2);
+  const urlCheckIn = searchParams.get('checkIn');
+  const urlCheckOut = searchParams.get('checkOut');
+  const urlGuests = searchParams.get('guests');
+
+  const [checkIn, setCheckIn] = useState<string>(
+    urlCheckIn && urlCheckIn >= todayStr ? urlCheckIn : formatDate(tomorrow)
+  );
+  const [checkOut, setCheckOut] = useState<string>(
+    urlCheckOut && (!urlCheckIn || urlCheckOut > (urlCheckIn || todayStr)) ? urlCheckOut : formatDate(threeDaysLater)
+  );
+  const [guestsCount, setGuestsCount] = useState<number>(
+    urlGuests && Number(urlGuests) >= 1 ? Number(urlGuests) : 2
+  );
 
   const [fullName, setFullName] = useState<string>('');
   const [email, setEmail] = useState<string>('');

@@ -143,26 +143,29 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
 
       {/* Main Image Viewport */}
       <div className="max-w-5xl w-full flex flex-col items-center justify-center my-auto pt-12 pb-6 px-2">
-        <div className="relative w-full aspect-video sm:aspect-[16/10] rounded-2xl overflow-hidden bg-gradient-to-br from-[#121212] via-[#1A1A1A] to-black border border-[#C5A059]/40 shadow-2xl flex flex-col items-center justify-center p-6 text-white text-center group">
-          {/* Aesthetic background glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#C5A059]/15 via-transparent to-black pointer-events-none" />
-
-          <div className="w-16 h-16 rounded-2xl bg-white/5 border border-[#C5A059]/40 text-[#C5A059] flex items-center justify-center mb-4 shadow-xl">
-            <Building2 className="w-8 h-8" />
-          </div>
-
-          <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#C5A059] mb-2">
-            KILIFA SUITES • PROPERTY MEDIA
-          </span>
-
-          <h3 className="text-xl sm:text-3xl font-serif italic text-white max-w-xl leading-snug">
-            {media.caption}
-          </h3>
-
-          {media.alt && (
-            <p className="text-xs text-white/50 mt-3 max-w-md font-light">
-              Alt text: "{media.alt}"
-            </p>
+        <div className="relative w-full aspect-video sm:aspect-[16/10] rounded-2xl overflow-hidden bg-black border border-[#C5A059]/40 shadow-2xl flex flex-col items-center justify-center text-white text-center group">
+          {media.url && !media.url.startsWith('[') ? (
+            <img
+              src={media.url}
+              alt={media.alt || media.caption}
+              className="w-full h-full object-contain bg-black"
+              onError={(e) => {
+                // If media fails, fallback to styled placeholder
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-[#C5A059]/40 text-[#C5A059] flex items-center justify-center shadow-xl">
+                <Building2 className="w-8 h-8" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#C5A059]">
+                KILIFA SUITES • PROPERTY MEDIA
+              </span>
+              <h3 className="text-xl sm:text-3xl font-serif italic text-white max-w-xl leading-snug">
+                {media.caption}
+              </h3>
+            </div>
           )}
         </div>
 

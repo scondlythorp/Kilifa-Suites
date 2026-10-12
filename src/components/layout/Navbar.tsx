@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Container } from '../common/Container';
 import { Button } from '../common/Button';
 import { BUSINESS_CONFIG } from '../../config/business';
-import { Menu, X, Calendar, ChevronDown, Shield, Sparkles, Image, Compass, Mail, Lock } from 'lucide-react';
+import { Menu, X, Calendar, ChevronDown, Shield, Sparkles, Image, Compass, Mail, Lock, MapPin } from 'lucide-react';
 
 interface NavbarProps {
   onMobileMenuToggle: () => void;
@@ -15,15 +15,15 @@ export const MAIN_NAV_LINKS = [
   { label: 'Suites', href: '/suites' },
   { label: 'About', href: '/about' },
   { label: 'Amenities', href: '/amenities' },
+  { label: 'Gallery', href: '/gallery' },
+  { label: 'Contact', href: '/contact' },
 ];
 
 export const DROPDOWN_NAV_LINKS = [
   { label: 'Guest Experience', href: '/guest-experience', icon: Sparkles },
   { label: 'Security & Safety', href: '/security', icon: Lock },
-  { label: 'Photo Gallery', href: '/gallery', icon: Image },
   { label: 'Workshops & Events', href: '/workshops', icon: Compass },
-  { label: 'Estate Location', href: '/location', icon: Compass },
-  { label: 'Contact Us', href: '/contact', icon: Mail },
+  { label: 'Estate Location', href: '/location', icon: MapPin },
 ];
 
 export const NAV_LINKS = [...MAIN_NAV_LINKS, ...DROPDOWN_NAV_LINKS];

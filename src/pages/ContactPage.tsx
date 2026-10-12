@@ -5,7 +5,8 @@ import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
 import { Button } from '../components/common/Button';
 import { BUSINESS_CONFIG } from '../config/business';
-import { Phone, Mail, MapPin, Send, CheckCircle2, MessageSquare } from 'lucide-react';
+import { api } from '../services/apiClient';
+import { Phone, Mail, MapPin, Send, CheckCircle2, MessageSquare, AlertCircle } from 'lucide-react';
 
 export const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,16 +20,65 @@ export const ContactPage: React.FC = () => {
 
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const FORMSUBMIT_EMAIL = 'modoulaminthorp4@gmail.com';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
 
-    // Simulate API delay
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // 1. Submit to FormSubmit.co AJAX endpoint for instant email delivery to modoulaminthorp4@gmail.com
+      const formSubmitPromise = fetch(`https://formsubmit.co/ajax/${FORMSUBMIT_EMAIL}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || 'Not provided',
+          subject: formData.subject,
+          message: formData.message,
+          _subject: `Kilifa Suites Inquiry: ${formData.subject} - ${formData.name}`,
+          _template: 'table',
+          _captcha: 'false',
+        }),
+      });
+
+      // 2. Concurrently record into internal system database
+      const localApiPromise = api.contact
+        .sendMessage({
+          fullName: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: formData.subject,
+          message: formData.message,
+        })
+        .catch((err) => {
+          console.warn('Local API storage note:', err);
+        });
+
+      const [res] = await Promise.all([formSubmitPromise, localApiPromise]);
+
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => null);
+        throw new Error(errorJson?.message || 'FormSubmit delivery error. Please try again or reach out on WhatsApp.');
+      }
+
       setSubmitted(true);
-    }, 1000);
+    } catch (err) {
+      console.error('Submission error:', err);
+      setSubmitError(
+        (err as Error).message ||
+          'Failed to submit your inquiry. Please try again or reach us directly via WhatsApp / telephone.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -132,7 +182,7 @@ export const ContactPage: React.FC = () => {
                       Inquiry Sent Successfully!
                     </h3>
                     <p className="text-style-body text-sm text-[var(--color-text-muted)] max-w-md mx-auto">
-                      Thank you for contacting Kilifa Suites. Our reception team in Soma will review your message and reply via email or phone shortly.
+                      Thank you for contacting Kilifa Suites. Your message has been forwarded directly to management (<span className="font-semibold text-[var(--color-text)]">modoulaminthorp4@gmail.com</span>). Our team will review your questions and reply promptly.
                     </p>
                     <Button
                       variant="outline"
@@ -145,7 +195,21 @@ export const ContactPage: React.FC = () => {
                     </Button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form
+                    onSubmit={handleSubmit}
+                    action={`https://formsubmit.co/${FORMSUBMIT_EMAIL}`}
+                    method="POST"
+                    className="space-y-6"
+                  >
+                    {/* FormSubmit Configuration */}
+                    <input type="hidden" name="_captcha" value="false" />
+                    <input type="hidden" name="_template" value="table" />
+                    <input
+                      type="hidden"
+                      name="_subject"
+                      value={`Kilifa Suites Inquiry: ${formData.subject} - ${formData.name || 'Guest'}`}
+                    />
+
                     <div>
                       <h3 className="text-style-h3 text-[var(--color-text)] mb-1">
                         Send Us a Direct Message
@@ -162,6 +226,7 @@ export const ContactPage: React.FC = () => {
                         </label>
                         <input
                           type="text"
+                          name="name"
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -176,6 +241,7 @@ export const ContactPage: React.FC = () => {
                         </label>
                         <input
                           type="email"
+                          name="email"
                           required
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -192,6 +258,7 @@ export const ContactPage: React.FC = () => {
                         </label>
                         <input
                           type="tel"
+                          name="phone"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                           placeholder="+220 700 0000"
@@ -204,6 +271,7 @@ export const ContactPage: React.FC = () => {
                           Subject / Inquiry Type
                         </label>
                         <select
+                          name="subject"
                           value={formData.subject}
                           onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                           className="w-full px-4 py-2.5 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
@@ -221,6 +289,7 @@ export const ContactPage: React.FC = () => {
                         Your Message / Questions *
                       </label>
                       <textarea
+                        name="message"
                         required
                         rows={4}
                         value={formData.message}
@@ -229,6 +298,13 @@ export const ContactPage: React.FC = () => {
                         className="w-full px-4 py-2.5 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                       />
                     </div>
+
+                    {submitError && (
+                      <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-start gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                        <span>{submitError}</span>
+                      </div>
+                    )}
 
                     <Button
                       type="submit"

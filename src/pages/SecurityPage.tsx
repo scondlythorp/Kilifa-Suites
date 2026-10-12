@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SEOHead } from '../components/seo/SEOHead';
 import { PageHeader } from '../components/common/PageHeader';
 import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
 import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
-import { AccessCard } from '../types';
 import {
   ShieldCheck,
   Video,
@@ -18,55 +17,13 @@ import {
   ArrowDown,
   Info,
   Calendar,
-  Clock,
   Sparkles,
-  Layers,
-  Code2,
-  ShieldAlert,
   Server,
   Building2,
+  ShieldAlert,
 } from 'lucide-react';
 
 export const SecurityPage: React.FC = () => {
-  // Sample Access Cards showcasing the TypeScript AccessCard data structure
-  const sampleCards: AccessCard[] = [
-    {
-      id: 'card-001',
-      bookingId: 'BK-2026-8801',
-      guestId: 'GST-9921',
-      cardIdentifier: 'KC-7729-01',
-      suiteId: 'suite-01',
-      suiteName: 'DAR',
-      activatedAt: '2026-08-09T14:00:00Z',
-      expiresAt: '2026-08-12T11:00:00Z',
-      status: 'active',
-    },
-    {
-      id: 'card-002',
-      bookingId: 'BK-2026-8802',
-      guestId: 'GST-9922',
-      cardIdentifier: 'KC-7729-02',
-      suiteId: 'suite-07',
-      suiteName: 'SUUDU',
-      activatedAt: '2026-08-01T12:00:00Z',
-      expiresAt: '2026-08-05T11:00:00Z',
-      status: 'expired',
-    },
-    {
-      id: 'card-003',
-      bookingId: 'BK-2026-8803',
-      guestId: 'GST-9923',
-      cardIdentifier: 'KC-7729-03',
-      suiteId: 'suite-04',
-      suiteName: 'EJAM',
-      activatedAt: '2026-08-15T14:00:00Z',
-      expiresAt: '2026-08-18T11:00:00Z',
-      status: 'pending',
-    },
-  ];
-
-  const [activeTabCard, setActiveTabCard] = useState<AccessCard>(sampleCards[0]);
-
   const securityFeatures = [
     {
       title: '24-Hour CCTV Monitoring',
@@ -286,134 +243,51 @@ export const SecurityPage: React.FC = () => {
             })}
           </div>
 
-          {/* Explicit Hardware Integration Disclaimer */}
-          <div className="mt-12 p-6 rounded-2xl bg-black/60 border border-[#C5A059]/30 flex items-start gap-4">
-            <div className="p-2.5 rounded bg-white/5 border border-[#C5A059]/40 text-[#C5A059] shrink-0 mt-0.5">
-              <Info className="w-5 h-5 text-[#C5A059]" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-semibold text-[#C5A059] uppercase tracking-widest">
-                Technical Disclaimer Notice
-              </h4>
-              <p className="text-xs text-white/70 leading-relaxed">
-                Please note: The website digital platform simulates and manages card issuance workflows and data specifications. The website is not currently connected directly to physical gate or door lock hardware, and no physical hardware API integration is operational on this website.
+          {/* Estate Privacy & Access Protection */}
+          <div className="mt-12 p-8 rounded-3xl bg-[#111111] border border-white/10 shadow-2xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-[#C5A059]/40 text-[#C5A059] text-[10px] font-semibold uppercase tracking-[0.25em]">
+                <Lock className="w-3.5 h-3.5 text-[#C5A059]" />
+                <span>Guest Privacy Protection</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-serif italic text-white">
+                Personalized RFID Keycard Technology
+              </h3>
+              <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-light">
+                Every visiting guest is issued an encrypted RFID keycard upon arrival at Kilifa Suites reception. Each card is programmed strictly for your designated suite and compound access gates during the duration of your stay. When you check out, credentials expire automatically to guarantee complete privacy and security for future guests.
               </p>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* TYPESCRIPT DATA STRUCTURE SHOWCASE */}
-      <Section background="default">
-        <Container size="lg">
-          <SectionHeader
-            eyebrow="System Architecture"
-            title="ACCESS CARD DATA STRUCTURE"
-            description="TypeScript interface specification for AccessCard management."
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Card Object Viewer */}
-            <div className="lg:col-span-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-serif italic text-white flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-[#C5A059]" /> Select Access Card Instance:
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {sampleCards.map((card) => (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={() => setActiveTabCard(card)}
-                    className={`px-3 py-2 rounded text-xs font-semibold uppercase tracking-wider transition-all shrink-0 ${
-                      activeTabCard.id === card.id
-                        ? 'bg-[#C5A059] text-black font-bold'
-                        : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
-                    }`}
-                  >
-                    {card.cardIdentifier} ({card.status})
-                  </button>
-                ))}
-              </div>
-
-              {/* JSON Visualizer */}
-              <div className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 font-mono text-xs text-emerald-400 space-y-2 overflow-x-auto shadow-2xl">
-                <div className="text-white/40 text-[10px] uppercase tracking-widest font-sans mb-2 flex items-center justify-between border-b border-white/10 pb-2">
-                  <span>AccessCard JSON Payload</span>
-                  <span className="text-[#C5A059] font-bold">Status: {activeTabCard.status}</span>
-                </div>
-                <pre className="text-white/80 leading-relaxed">
-{JSON.stringify(activeTabCard, null, 2)}
-                </pre>
-              </div>
+              <ul className="space-y-2 text-xs text-white/60">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#C5A059] shrink-0" />
+                  <span>Contactless, secure RFID smart chip technology</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#C5A059] shrink-0" />
+                  <span>Individual private suite authorization</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#C5A059] shrink-0" />
+                  <span>Automatic de-activation upon checkout</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Simulated Digital Keycard Visual */}
-            <div className="lg:col-span-6 space-y-4">
-              <span className="text-xs font-serif italic text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#C5A059]" /> Simulated Guest RFID Keycard:
-              </span>
-
-              <div className="p-8 rounded-3xl bg-gradient-to-br from-[#1A1A1A] via-[#111111] to-black border border-[#C5A059]/40 shadow-2xl space-y-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none" />
-
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#C5A059] block">
-                      KILIFA SUITES • ACCESS CARD
-                    </span>
-                    <h3 className="text-xl font-serif italic text-white mt-1">
-                      {activeTabCard.suiteName}
-                    </h3>
-                  </div>
-                  <div className="p-2 rounded bg-white/5 border border-[#C5A059]/30 text-[#C5A059]">
-                    <Lock className="w-5 h-5" />
-                  </div>
-                </div>
-
-                <div className="py-4 border-y border-white/10 grid grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest block">Card ID</span>
-                    <span className="font-mono text-[#C5A059] font-bold">{activeTabCard.cardIdentifier}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest block">Booking ID</span>
-                    <span className="font-mono text-white/80">{activeTabCard.bookingId}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest block">Activated</span>
-                    <span className="text-white/70">{new Date(activeTabCard.activatedAt).toLocaleDateString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest block">Expires</span>
-                    <span className="text-white/70">{new Date(activeTabCard.expiresAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-[10px] text-white/40 uppercase tracking-widest">
-                    Status: <strong className="text-[#C5A059] uppercase">{activeTabCard.status}</strong>
-                  </span>
-                  <span className="text-[10px] text-white/30 italic">
-                    RFID Encrypted Security
-                  </span>
-                </div>
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#161616] via-[#111111] to-black border border-[#C5A059]/30 text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-white/5 border border-[#C5A059] flex items-center justify-center text-[#C5A059]">
+                <ShieldCheck className="w-8 h-8 text-[#C5A059]" />
               </div>
-
-              <div className="p-4 rounded-xl bg-[#111111] border border-white/10 text-xs text-white/60">
-                <p>
-                  <strong>Security Note:</strong> RFID keycards are encoded specifically for registered guests during check-in. Keycards cannot be duplicated or reused after the stay authorization expires.
-                </p>
+              <h4 className="text-lg font-serif italic text-white">
+                Rest with Complete Confidence
+              </h4>
+              <p className="text-xs text-white/60 leading-relaxed max-w-sm mx-auto">
+                Whether traveling for international business, family holidays, or countryside excursions in Soma, your security is actively protected 24 hours a day.
+              </p>
+              <div className="pt-2">
+                <Button to="/booking" variant="secondary" size="md" leftIcon={<Calendar className="w-4 h-4" />}>
+                  Reserve Your Suite
+                </Button>
               </div>
             </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <Button to="/booking" variant="primary" size="lg" leftIcon={<Calendar className="w-4 h-4" />}>
-              Book Your Secure Stay at Kilifa Suites
-            </Button>
           </div>
         </Container>
       </Section>

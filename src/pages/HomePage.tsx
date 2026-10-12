@@ -45,6 +45,7 @@ import {
 export const HomePage: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<Media | null>(null);
   const [selectedLightboxMedia, setSelectedLightboxMedia] = useState<Media | null>(null);
+  const [heroVideoFailed, setHeroVideoFailed] = useState<boolean>(false);
 
   // Hero Video Animation State (20-second loop)
   // Featured Suites (using official dataset)
@@ -136,23 +137,32 @@ export const HomePage: React.FC = () => {
 
       {/* HERO SECTION WITH LOOPING VIDEO BACKGROUND (HERO LOOP) */}
       <section className="relative w-full min-h-[90vh] sm:min-h-screen flex items-center justify-center overflow-hidden border-b border-white/10 bg-[#0A0A0A] text-white">
-        {/* Full-Width Background Video - 100% width & 100% height */}
+        {/* Full-Width Background Video or High-Res Image Fallback */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
-          <video
-            src="/media/videos/kilifa-property-exterior-tour-01.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/media/images/kilifa-property-exterior-01.jpeg"
-            onTimeUpdate={(e) => {
-              if (e.currentTarget.currentTime >= 23) {
-                e.currentTarget.currentTime = 0;
-              }
-            }}
-            className="w-full h-full object-cover object-center scale-105"
-          />
+          {!heroVideoFailed ? (
+            <video
+              src="/media/videos/kilifa-property-exterior-tour-01.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              poster="/media/images/kilifa-property-exterior-01.jpeg"
+              onError={() => setHeroVideoFailed(true)}
+              onTimeUpdate={(e) => {
+                if (e.currentTarget.currentTime >= 23) {
+                  e.currentTarget.currentTime = 0;
+                }
+              }}
+              className="w-full h-full object-cover object-center scale-105"
+            />
+          ) : (
+            <img
+              src="/media/images/kilifa-property-exterior-01.jpeg"
+              alt="Kilifa Suites Exterior in Soma, The Gambia"
+              className="w-full h-full object-cover object-center scale-105"
+            />
+          )}
           {/* Semi-transparent black overlay at 45% for high text contrast and legibility */}
           <div className="absolute inset-0 bg-black/45 z-[1]" />
           {/* Cinematic top & bottom atmospheric gradients */}
