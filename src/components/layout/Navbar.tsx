@@ -79,9 +79,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-base sm:text-lg font-light tracking-[0.25em] text-white uppercase leading-tight group-hover:text-[#C5A059] transition-colors">
               {BUSINESS_CONFIG.name}
             </span>
-            <span className="text-[9px] font-semibold text-[#C5A059] tracking-[0.3em] uppercase">
-              TABOKOTO • SOMA
-            </span>
           </div>
         </Link>
 

@@ -38,16 +38,7 @@ export const Footer: React.FC = () => {
               {BUSINESS_CONFIG.tagline}. Comprising 12 executive private suites across 2 secure, solar-powered houses in Soma, Lower River Region.
             </p>
 
-            <div className="pt-2 flex flex-col gap-1 text-xs text-white/60 font-medium">
-              <p>
-                <span className="text-[#C5A059] font-semibold">Proprietor:</span>{' '}
-                {BUSINESS_CONFIG.owner}
-              </p>
-              <p>
-                <span className="text-[#C5A059] font-semibold">Property Spec:</span>{' '}
-                {BUSINESS_CONFIG.property.totalHouses} Houses • {BUSINESS_CONFIG.property.suitesPerHouse} Suites Per House ({BUSINESS_CONFIG.property.totalSuites} Total)
-              </p>
-            </div>
+
           </div>
 
           {/* Column 2: Navigation Links */}
