@@ -12,7 +12,7 @@ export const SEO_CONFIG: Record<string, SEOMetadata> = {
   home: {
     title: 'Kilifa Suites | Luxury Guest House in Soma, Lower River Region, The Gambia',
     description: 'Experience refined luxury, uncompromised security, and authentic Gambian warmth at Kilifa Suites in Tabokoto, Soma. Featuring 12 executive suites across 2 private houses.',
-    keywords: 'Kilifa Suites, Soma guest house, Lower River Region Gambia, luxury accommodation Soma, Musa Njai hotel, Tabokoto guest house, Gambia hotels, secure suites Soma',
+    keywords: 'Kilifa Suites, Soma guest house, Lower River Region Gambia, luxury accommodation Soma, Alhaji Kilifa hotel, Tabokoto guest house, Gambia hotels, secure suites Soma',
     ogTitle: 'Kilifa Suites - Luxury Guest House in Soma, The Gambia',
     ogDescription: '12 Executive Suites across 2 private houses in Tabokoto, Soma. Solar power, high-grade security, and quiet comfort.',
     ogType: 'website',
@@ -28,10 +28,10 @@ export const SEO_CONFIG: Record<string, SEOMetadata> = {
     canonicalPath: '/suites',
   },
   about: {
-    title: 'About Us & Founder Musa Njai | Kilifa Suites',
-    description: 'Learn about Kilifa Suites in Tabokoto, Soma, founded by Musa Njai. Discover our commitment to luxury hospitality, guest security, and Lower River Region community heritage.',
-    keywords: 'Musa Njai Kilifa Suites, Soma guest house history, Tabokoto hospitality, Lower River Region owner',
-    ogTitle: 'About Kilifa Suites & Founder Musa Njai',
+    title: 'About Us & Founder Alhaji Kilifa | Kilifa Suites',
+    description: 'Learn about Kilifa Suites in Tabokoto, Soma, founded under the vision of Alhaji Kilifa. Discover our commitment to luxury serviced suites, guest security, and Lower River Region community heritage.',
+    keywords: 'Alhaji Kilifa, Kilifa Suites, Soma guest house history, Tabokoto hospitality, Lower River Region owner',
+    ogTitle: 'About Kilifa Suites & Founder Alhaji Kilifa',
     ogDescription: 'Crafted with passion for authentic Gambian hospitality, safety, and modern comfort in Soma.',
     ogType: 'website',
     canonicalPath: '/about',

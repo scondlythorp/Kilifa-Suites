@@ -112,10 +112,11 @@ export class EmailNotificationProvider implements INotificationProvider {
         };
 
       case 'PAYMENT_RECEIVED':
+        const displayAmt = `${payload.currency === 'USD' ? '$' : 'D '}${Number(payload.amount || 0).toLocaleString()}`;
         return {
-          subject: `[Kilifa Suites] Payment Receipt — ${payload.currency || '$'}${payload.amount || 0}`,
-          textBody: `Dear ${name},\n\nThank you for your payment of ${payload.currency || '$'}${payload.amount || 0} via ${payload.paymentMethod || 'Payment Gateway'} for booking ${ref}.\n\nYour account has been updated successfully.`,
-          htmlBody: `<h2>Payment Confirmation</h2><p>Payment of <strong>${payload.currency || '$'}${payload.amount || 0}</strong> received for reservation ${ref}.</p>`,
+          subject: `[Kilifa Suites] Payment Receipt — ${displayAmt}`,
+          textBody: `Dear ${name},\n\nThank you for your payment of ${displayAmt} via ${payload.paymentMethod || 'Payment Gateway'} for booking ${ref}.\n\nYour account has been updated successfully.`,
+          htmlBody: `<h2>Payment Confirmation</h2><p>Payment of <strong>${displayAmt}</strong> received for reservation ${ref}.</p>`,
         };
 
       case 'CHECK_IN_REMINDER':

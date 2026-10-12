@@ -49,7 +49,7 @@ export const initiatePayment = async (req: Request, res: Response, next: NextFun
       bookingReference: bookingReference || '',
       amount: Number(amount || 0),
       paidAmount: paidAmount !== undefined ? Number(paidAmount) : undefined,
-      currency: currency || 'USD',
+      currency: currency || 'GMD',
       provider,
       guestName: guestName || 'Guest',
       guestEmail: guestEmail || 'guest@kilifasuites.gm',

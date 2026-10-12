@@ -4,7 +4,7 @@ export const BUSINESS_CONFIG: BusinessConfig = {
   name: 'Kilifa Suites',
   tagline: 'Refined Luxury, Uncompromised Privacy & Gambian Warmth in Soma',
   category: 'Guest House / Hotel',
-  owner: 'Musa Njie',
+  owner: 'Alhaji Kilifa',
   location: {
     street: 'Main Highway Link, Tabokoto Area',
     neighborhood: 'Tabokoto',
@@ -35,13 +35,13 @@ export const BUSINESS_CONFIG: BusinessConfig = {
     textMark: 'KILIFA SUITES',
   },
   history: {
-    establishmentYear: '[CONFIRMED YEAR]',
-    inaugurationYear: '[CONFIRMED YEAR]',
+    establishmentYear: '2024',
+    inaugurationYear: '2025',
   },
   jufre: {
     brandName: 'Jufure',
-    description: "Musa Njie's clothing brand.",
-    link: '[JUFRE LINK]',
+    description: "Premium Gambian fashion and lifestyle brand associated with Kilifa hospitality.",
+    link: 'https://kilifasuites.com',
   },
   property: {
     totalHouses: 2,
@@ -194,8 +194,8 @@ export const SUITES_DATA: Suite[] = Array.from({ length: 12 }, (_, index) => {
     bedrooms: num % 4 === 0 ? 2 : 1,
     bathrooms: 1,
     bedType: num % 2 === 0 ? 'King Executive Bed' : 'Queen Plush Bed',
-    pricePerNight: 85 + (num % 3) * 20,
-    currency: 'USD',
+    pricePerNight: 2500,
+    currency: 'GMD',
     baseAmenities: [
       '24/7 Solar Power Backup',
       'High-Capacity Air Conditioning',
@@ -352,16 +352,16 @@ export const MEDIA_GALLERY_DATA: Media[] = MEDIA_CATALOG;
 export const STAFF_DATA: Staff[] = [
   {
     id: 'stf-founder',
-    name: 'Musa Njie',
-    title: 'Founder & Proprietor',
-    position: 'Founder & Proprietor',
-    bio: 'Founder and proprietor of Kilifa Suites, dedicated to providing world-class luxury accommodations, quiet privacy, and genuine Gambian warmth in Soma.',
+    name: 'Alhaji Kilifa',
+    title: 'Proprietor & Founder',
+    position: 'Proprietor',
+    bio: 'Proprietor and founder of Kilifa Suites, dedicated to providing world-class serviced suites, quiet privacy, and genuine Gambian warmth in Soma.',
     avatar: '/media/images/kilifa-staff-00.jpeg',
     role: 'owner',
     department: 'Executive Leadership',
     order: 1,
     socialLinks: {
-      email: 'info@kilifasuites.com',
+      email: 'owner@kilifasuites.com',
       whatsapp: '+2207001234',
     },
   },

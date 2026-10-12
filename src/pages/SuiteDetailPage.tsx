@@ -11,6 +11,7 @@ import { LightboxModal } from '../components/media/LightboxModal';
 import { VideoModal } from '../components/media/VideoModal';
 import { SUITES_DATA, BUSINESS_CONFIG } from '../config/business';
 import { Media } from '../types';
+import { formatNightlyRate, formatGMD } from '../utils/currency';
 import {
   Users,
   Bed,
@@ -119,9 +120,9 @@ export const SuiteDetailPage: React.FC = () => {
               </span>
               <div className="flex items-baseline gap-1 my-1">
                 <span className="text-3xl font-bold text-[#C5A059] font-serif">
-                  ${suite.pricePerNight}
+                  {formatGMD(suite.pricePerNight)}
                 </span>
-                <span className="text-xs font-semibold text-white/50">USD / night</span>
+                <span className="text-xs font-semibold text-white/50">/ night</span>
               </div>
 
               <Button
@@ -429,7 +430,7 @@ export const SuiteDetailPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span>Nightly Rate:</span>
-                    <span className="font-bold text-[#C5A059] text-base">${suite.pricePerNight} USD / night</span>
+                    <span className="font-bold text-[#C5A059] text-base">{formatNightlyRate(suite.pricePerNight)}</span>
                   </div>
                 </div>
 

@@ -4,6 +4,7 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { ImagePlaceholder } from '../common/ImagePlaceholder';
 import { Users, Bed, ShieldCheck, Zap, ArrowRight, Eye } from 'lucide-react';
+import { formatNightlyRate } from '../../utils/currency';
 
 interface SuiteCardProps {
   suite: Suite;
@@ -81,9 +82,8 @@ export const SuiteCard: React.FC<SuiteCardProps> = ({ suite, onBookClick }) => {
             <span className="text-[10px] uppercase tracking-widest text-white/40 block">Rate per night</span>
             <div className="flex items-baseline gap-1">
               <span className="text-xl font-bold text-[#C5A059] font-serif">
-                ${suite.pricePerNight}
+                {formatNightlyRate(suite.pricePerNight)}
               </span>
-              <span className="text-[10px] font-semibold text-white/40">USD</span>
             </div>
           </div>
 

@@ -42,8 +42,55 @@ export const SEOHead: React.FC<SEOHeadProps> = ({ configKey = 'home', customSEO 
     }
     canonical.setAttribute('href', `${window.location.origin}${seo.canonicalPath}`);
 
-    // Clean up title on unmount if needed
-  }, [seo]);
+    // Set JSON-LD Schema.org Structured Data
+    let schemaScript = document.querySelector('script[data-schema="kilifa-hotel"]');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.setAttribute('type', 'application/ld+json');
+      schemaScript.setAttribute('data-schema', 'kilifa-hotel');
+      document.head.appendChild(schemaScript);
+    }
+    const structuredData = {
+      '@context': 'https://schema.org',
+      '@type': 'Hotel',
+      name: 'Kilifa Suites',
+      description: seo.description,
+      url: window.location.origin,
+      telephone: '+2207001234',
+      priceRange: 'D 2,500',
+      currenciesAccepted: 'GMD',
+      paymentAccepted: 'Cash, Mobile Money (Wave, Afrimoney), Credit Card, Bank Transfer',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Main Highway Link, Tabokoto Area',
+        addressLocality: 'Soma',
+        addressRegion: 'Lower River Region',
+        addressCountry: 'GM',
+      },
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: 13.4333,
+        longitude: -15.5333,
+      },
+      containsPlace: [
+        {
+          '@type': 'HotelRoom',
+          name: 'Executive Suite',
+          numberOfRooms: 12,
+          occupancy: {
+            '@type': 'QuantitativeValue',
+            maxValue: 4,
+          },
+          offers: {
+            '@type': 'Offer',
+            price: '2500',
+            priceCurrency: 'GMD',
+            availability: 'https://schema.org/InStock',
+          },
+        },
+      ],
+    };
+    schemaScript.textContent = JSON.stringify(structuredData);
 
   return null;
 };

@@ -8,6 +8,7 @@ import { Button } from '../components/common/Button';
 import { SUITES_DATA, BUSINESS_CONFIG } from '../config/business';
 import { Suite } from '../types';
 import { api } from '../services/apiClient';
+import { formatGMD, formatNightlyRate, calculateStayTotal } from '../utils/currency';
 import {
   Calendar,
   CheckCircle2,
@@ -97,7 +98,9 @@ export const BookingPage: React.FC = () => {
     return diffDays > 0 ? diffDays : 1;
   }, [checkIn, checkOut]);
 
-  const totalPrice = selectedSuite.pricePerNight * nightCount;
+  const totalPrice = useMemo(() => {
+    return calculateStayTotal(selectedSuite.pricePerNight, nightCount);
+  }, [selectedSuite.pricePerNight, nightCount]);
 
   // Form Validation Logic
   const validateForm = (): boolean => {
@@ -195,7 +198,7 @@ export const BookingPage: React.FC = () => {
         bookingId: bookingData.id,
         bookingReference: bookingData.bookingReference,
         amount: bookingData.totalEstimatedPrice || totalPrice,
-        currency: 'USD',
+        currency: 'GMD',
         provider: selectedProvider,
         guestName: fullName.trim(),
         guestEmail: email.trim(),
@@ -313,7 +316,7 @@ export const BookingPage: React.FC = () => {
                       )}
                       <div className="flex justify-between pt-2 border-t border-white/10 text-emerald-400 font-bold text-sm">
                         <span>Est. Total:</span>
-                        <span>${totalPrice} USD (~{Math.round(totalPrice * 68)} GMD)</span>
+                        <span>{formatGMD(totalPrice)}</span>
                       </div>
                     </div>
 
@@ -374,7 +377,7 @@ export const BookingPage: React.FC = () => {
                       >
                         {SUITES_DATA.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.name} (House {s.houseNumber} • ${s.pricePerNight}/night)
+                            {s.name} (House {s.houseNumber} • {formatNightlyRate(s.pricePerNight)})
                           </option>
                         ))}
                       </select>
@@ -581,7 +584,7 @@ export const BookingPage: React.FC = () => {
                             { id: 'AFRIMONEY', name: 'Afrimoney', badge: 'Gambia Mobile', sub: '*133# USSD' },
                             { id: 'APS_WALLET', name: 'APS Wallet', badge: 'Remittance', sub: 'Local/Diaspora' },
                             { id: 'VISA_CARD', name: 'Visa / Card', badge: 'PCI-DSS', sub: 'Tokenized' },
-                            { id: 'PAYPAL', name: 'PayPal', badge: 'Global', sub: 'USD Express' },
+                            { id: 'PAYPAL', name: 'PayPal', badge: 'Global', sub: 'Online Express' },
                             { id: 'CASH', name: 'Cash / Wire', badge: 'Reception', sub: 'Pay at Desk' },
                           ].map((p) => {
                             const isSelected = selectedProvider === p.id;
@@ -661,7 +664,7 @@ export const BookingPage: React.FC = () => {
                 <div className="space-y-3 text-xs border-y border-white/10 py-4 font-mono">
                   <div className="flex justify-between">
                     <span className="text-white/60">Rate / Night:</span>
-                    <span className="font-semibold text-white">${selectedSuite.pricePerNight} USD</span>
+                    <span className="font-semibold text-white">{formatNightlyRate(selectedSuite.pricePerNight)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/60">Duration:</span>
@@ -673,7 +676,7 @@ export const BookingPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between pt-2 border-t border-white/10 text-sm font-bold">
                     <span className="text-[#C5A059]">Estimated Total:</span>
-                    <span className="text-xl text-[#C5A059]">${totalPrice} USD</span>
+                    <span className="text-xl text-[#C5A059]">{formatGMD(totalPrice)}</span>
                   </div>
                 </div>
 

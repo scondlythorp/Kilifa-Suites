@@ -28,6 +28,7 @@ import {
   UserCheck,
   Building2,
 } from 'lucide-react';
+import { formatGMD } from '../../utils/currency';
 
 interface GuestsTabProps {
   guests: any[];
@@ -268,7 +269,7 @@ export const GuestsTab: React.FC<GuestsTabProps> = ({
               Lifetime Guest Value
             </span>
             <div className="text-2xl font-serif font-bold text-emerald-400 mt-1">
-              ${totalLifetimeSpend.toLocaleString()}
+              {formatGMD(totalLifetimeSpend)}
             </div>
             <div className="text-[10px] text-emerald-400/80 font-mono mt-1">
               Cumulative Booking Revenue
@@ -421,7 +422,7 @@ export const GuestsTab: React.FC<GuestsTabProps> = ({
                           </span>
                           <span className="text-white/30">•</span>
                           <span className="text-[11px] font-mono text-emerald-400">
-                            ${totalSpend}
+                            {formatGMD(totalSpend)}
                           </span>
                         </div>
                       </div>
@@ -532,7 +533,7 @@ export const GuestsTab: React.FC<GuestsTabProps> = ({
                       <td className="p-4 text-[#C5A059] font-bold">
                         {guest.totalBookings || guest.bookings?.length || 0}
                       </td>
-                      <td className="p-4 text-emerald-400 font-bold">${totalSpend}</td>
+                      <td className="p-4 text-emerald-400 font-bold">{formatGMD(totalSpend)}</td>
                       <td className="p-4 text-right">
                         <button
                           onClick={() => {
@@ -652,9 +653,10 @@ export const GuestsTab: React.FC<GuestsTabProps> = ({
                     <div className="bg-black/30 p-4 rounded-xl border border-white/10">
                       <span className="text-white/50 text-[10px]">TOTAL LIFETIME SPEND</span>
                       <div className="text-xl font-bold text-emerald-400 mt-1">
-                        $
-                        {selectedGuest.totalSpend ||
-                          selectedGuest.bookings?.reduce((s: number, b: any) => s + (b.totalEstimatedPrice || 0), 0) || 0}
+                        {formatGMD(
+                          selectedGuest.totalSpend ||
+                            selectedGuest.bookings?.reduce((s: number, b: any) => s + (b.totalEstimatedPrice || 0), 0) || 0
+                        )}
                       </div>
                     </div>
                     <div className="bg-black/30 p-4 rounded-xl border border-white/10">
@@ -775,7 +777,7 @@ export const GuestsTab: React.FC<GuestsTabProps> = ({
 
                           <div className="flex flex-col md:items-end justify-between gap-3 shrink-0">
                             <div className="text-right">
-                              <div className="text-lg font-bold text-emerald-400">${b.totalEstimatedPrice}</div>
+                              <div className="text-lg font-bold text-emerald-400">{formatGMD(b.totalEstimatedPrice)}</div>
                               <div className="text-[10px] text-white/40">{b.guestsCount} Guest(s)</div>
                             </div>
 

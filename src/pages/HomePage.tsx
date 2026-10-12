@@ -146,6 +146,11 @@ export const HomePage: React.FC = () => {
             playsInline
             preload="auto"
             poster="/media/images/kilifa-property-exterior-01.jpeg"
+            onTimeUpdate={(e) => {
+              if (e.currentTarget.currentTime >= 23) {
+                e.currentTarget.currentTime = 0;
+              }
+            }}
             className="w-full h-full object-cover object-center scale-105"
           />
           {/* Semi-transparent black overlay at 45% for high text contrast and legibility */}
@@ -225,7 +230,7 @@ export const HomePage: React.FC = () => {
           <SectionHeader
             eyebrow="Hospitality Distinction"
             title="WELCOME TO KILIFA SUITES"
-            description="Established by Musa Njie, Kilifa Suites provides contemporary, high-standard accommodation tailored for every traveler visiting Soma and Lower River Region."
+            description="Established under the vision of Alhaji Kilifa, Kilifa Suites provides contemporary, high-standard accommodation tailored for every traveler visiting Soma and Lower River Region."
           />
 
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-8 sm:p-12 space-y-8">

@@ -47,7 +47,7 @@ export class PayPalAdapter implements IPaymentAdapter {
                 {
                   reference_id: txRef,
                   amount: {
-                    currency_code: req.currency || 'USD',
+                    currency_code: req.currency || 'GMD',
                     value: paidAmount.toFixed(2),
                   },
                   description: `Kilifa Suites Reservation ${req.bookingReference}`,
@@ -65,7 +65,7 @@ export class PayPalAdapter implements IPaymentAdapter {
               bookingReference: req.bookingReference,
               amount: req.amount,
               paidAmount,
-              currency: req.currency || 'USD',
+              currency: req.currency || 'GMD',
               provider: 'PAYPAL',
               status: 'PROCESSING',
               transactionRef: orderData.id || txRef,
@@ -87,7 +87,7 @@ export class PayPalAdapter implements IPaymentAdapter {
       bookingReference: req.bookingReference,
       amount: req.amount,
       paidAmount,
-      currency: req.currency || 'USD',
+      currency: req.currency || 'GMD',
       provider: 'PAYPAL',
       status: isPartial ? 'PARTIALLY_PAID' : 'SUCCESSFUL',
       transactionRef: txRef,
@@ -102,7 +102,7 @@ export class PayPalAdapter implements IPaymentAdapter {
       status: 'SUCCESSFUL',
       amount: 0,
       paidAmount: 0,
-      currency: 'USD',
+      currency: 'GMD',
       provider: 'PAYPAL',
       gatewayMessage: 'PayPal order capture verified',
     };

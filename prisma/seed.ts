@@ -223,7 +223,7 @@ async function main() {
       await prisma.payment.create({
         data: {
           amount: createdBooking.totalEstimatedPrice,
-          currency: 'USD',
+          currency: 'GMD',
           status: PaymentStatus.PENDING,
           method: PaymentMethod.CASH,
           transactionRef: 'TXN-KS-882910',

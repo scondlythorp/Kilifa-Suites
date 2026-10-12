@@ -25,7 +25,7 @@ class GuestService {
       country: 'The Gambia',
       vipStatus: true,
       totalBookings: 2,
-      totalSpend: 540,
+      totalSpend: 7500,
       createdAt: '2026-01-15T10:00:00Z',
       bookings: [
         {
@@ -39,9 +39,9 @@ class GuestService {
           guestsCount: 2,
           preferredSuite: 'suite-01',
           suiteName: 'DAR',
-          pricePerNight: 180,
+          pricePerNight: 2500,
           totalNights: 3,
-          totalEstimatedPrice: 540,
+          totalEstimatedPrice: 7500,
           specialRequests: 'Airport shuttle pickup requested & late check-in',
           status: 'PENDING',
           createdAt: new Date().toISOString(),
@@ -56,7 +56,7 @@ class GuestService {
       country: 'Senegal',
       vipStatus: false,
       totalBookings: 1,
-      totalSpend: 300,
+      totalSpend: 5000,
       createdAt: '2026-03-22T14:30:00Z',
       bookings: [
         {
@@ -70,9 +70,9 @@ class GuestService {
           guestsCount: 1,
           preferredSuite: 'suite-02',
           suiteName: 'SAMA',
-          pricePerNight: 150,
+          pricePerNight: 2500,
           totalNights: 2,
-          totalEstimatedPrice: 300,
+          totalEstimatedPrice: 5000,
           specialRequests: 'Extra hypoallergenic pillows requested',
           status: 'CHECKED_IN',
           createdAt: new Date(Date.now() - 86400000).toISOString(),

@@ -15,6 +15,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
+import { formatNightlyRate, formatGMD } from '../../utils/currency';
 
 interface SuitesTabProps {
   suites: Suite[];
@@ -55,12 +56,12 @@ export const SuitesTab: React.FC<SuitesTabProps> = ({
       name: '',
       houseNumber: 1,
       floor: 'Ground Floor',
-      pricePerNight: 150,
+      pricePerNight: 2500,
       maxOccupancy: 2,
       bedrooms: 1,
       bathrooms: 1,
       description: 'Luxury suite in Kilifa Suites Gambia featuring king bed, pristine parlor, and full luxury amenities.',
-      images: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+      images: '/media/images/kilifa-parlor-01.jpeg',
       videos: '',
     });
     setFormError(null);
@@ -157,7 +158,7 @@ export const SuitesTab: React.FC<SuitesTabProps> = ({
               {/* Suite Image Preview */}
               <div className="relative h-48 bg-black/40 overflow-hidden">
                 <img
-                  src={suite.images?.[0] || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'}
+                  src={suite.images?.[0] || suite.featuredImage || '/media/images/kilifa-parlor-01.jpeg'}
                   alt={suite.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -177,9 +178,8 @@ export const SuitesTab: React.FC<SuitesTabProps> = ({
                   </h3>
                   <div className="text-right shrink-0">
                     <span className="text-xl font-serif text-[#C5A059] font-bold">
-                      ${suite.pricePerNight}
+                      {formatNightlyRate(suite.pricePerNight)}
                     </span>
-                    <span className="text-[10px] text-white/50 block font-mono">/ night</span>
                   </div>
                 </div>
 
@@ -301,10 +301,11 @@ export const SuitesTab: React.FC<SuitesTabProps> = ({
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-white/70 mb-1 font-mono">Price / Night ($) *</label>
+                  <label className="block text-white/70 mb-1 font-mono">Price / Night (GMD) *</label>
                   <input
                     type="number"
                     min="1"
+                    placeholder="2500"
                     value={formData.pricePerNight}
                     onChange={(e) => setFormData({ ...formData, pricePerNight: Number(e.target.value) })}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white focus:border-[#C5A059] focus:outline-none"

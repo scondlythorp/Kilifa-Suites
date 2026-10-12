@@ -26,10 +26,10 @@ import {
 export const AboutPage: React.FC = () => {
   const founder = STAFF_DATA.find((s) => s.role === 'owner') || {
     id: 'stf-founder',
-    name: 'Musa Njie',
+    name: 'Alhaji Kilifa',
     title: 'Founder & Proprietor',
-    bio: '[FOUNDER MESSAGE]',
-    avatar: '[FOUNDER PHOTO]',
+    bio: 'Founder and proprietor of Kilifa Suites.',
+    avatar: '/media/images/kilifa-staff-00.jpeg',
     role: 'owner' as const,
   };
 
@@ -40,8 +40,8 @@ export const AboutPage: React.FC = () => {
       <SEOHead configKey="about" />
 
       <PageHeader
-        title="About Kilifa Suites & Founder Musa Njie"
-        subtitle="A contemporary hospitality establishment in Tabokoto, Soma, Lower River Region, The Gambia."
+        title="About Kilifa Suites & Founder Alhaji Kilifa"
+        subtitle="A contemporary serviced suites establishment in Tabokoto, Soma, Lower River Region, The Gambia."
         breadcrumbs={[{ label: 'About Us' }]}
         bgTag="Our Heritage & Vision"
       />
@@ -139,7 +139,7 @@ export const AboutPage: React.FC = () => {
           <SectionHeader
             eyebrow="Leadership & Vision"
             title="FOUNDER"
-            description="Established under the leadership of Musa Njie."
+            description="Established under the leadership of Alhaji Kilifa."
           />
 
           <div className="p-8 sm:p-12 rounded-3xl bg-[#111111] border border-white/10 shadow-xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
@@ -148,12 +148,12 @@ export const AboutPage: React.FC = () => {
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-black">
                   <img
                     src="/media/images/kilifa-staff-00.jpeg"
-                    alt="Musa Njie - Founder & Proprietor"
+                    alt="Alhaji Kilifa - Founder & Proprietor"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3 text-xs text-white">
-                    <span className="font-serif italic text-sm text-[#C5A059] block">Musa Njie</span>
+                    <span className="font-serif italic text-sm text-[#C5A059] block">Alhaji Kilifa</span>
                     <span className="text-[10px] text-white/70">Founder & Proprietor</span>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export const AboutPage: React.FC = () => {
                   Founder & Proprietor
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-serif italic text-white">
-                  Musa Njie
+                  Alhaji Kilifa
                 </h3>
               </div>
 
@@ -252,17 +252,17 @@ export const AboutPage: React.FC = () => {
                 Jufure
               </h3>
               <p className="text-xs text-white/60 leading-relaxed">
-                Musa Njie's clothing brand.
+                Premium Gambian fashion and lifestyle brand associated with Kilifa hospitality.
               </p>
             </div>
 
             <a
-              href={BUSINESS_CONFIG.jufre?.link || '#'}
+              href="https://kilifasuites.com"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-white/5 border border-[#C5A059]/40 text-[#C5A059] hover:bg-[#C5A059] hover:text-black text-xs font-semibold uppercase tracking-widest transition-colors shrink-0"
             >
-              <span>[JUFRE LINK]</span>
+              <span>Explore Jufure</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>

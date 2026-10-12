@@ -101,7 +101,8 @@ export class SmsNotificationProvider implements INotificationProvider {
         return `KILIFA SUITES: Booking CONFIRMED! Ref: ${ref}. Suite: ${suite}. Checkin: ${payload.checkInDate || 'TBD'}. Welcome!`;
 
       case 'PAYMENT_RECEIVED':
-        return `KILIFA SUITES: Received ${payload.currency || '$'}${payload.amount || 0} for booking ${ref}. Thank you!`;
+        const smsAmt = `${payload.currency === 'USD' ? '$' : 'D '}${Number(payload.amount || 0).toLocaleString()}`;
+        return `KILIFA SUITES: Received ${smsAmt} for booking ${ref}. Thank you!`;
 
       case 'CHECK_IN_REMINDER':
         return `KILIFA SUITES: Reminder - Check-in for ${suite} is ${payload.checkInDate}. Front desk is at your service.`;

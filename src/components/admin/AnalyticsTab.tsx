@@ -18,6 +18,7 @@ import {
   CalendarRange,
   ArrowUpRight,
 } from 'lucide-react';
+import { formatGMD } from '../../utils/currency';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -68,17 +69,17 @@ export const AnalyticsTab: React.FC = () => {
 
     // 1. KPI Summary
     csvContent += '--- OVERVIEW METRICS ---\n';
-    csvContent += `Occupancy Rate (%),Occupied Suites,Available Suites,Total Suites,ADR ($),RevPAR ($)\n`;
-    csvContent += `${report.occupancy.rate}%,${report.occupancy.occupiedSuites},${report.occupancy.availableSuites},${report.occupancy.totalSuites},$${report.occupancy.adr},$${report.occupancy.revpar}\n\n`;
+    csvContent += `Occupancy Rate (%),Occupied Suites,Available Suites,Total Suites,ADR (GMD),RevPAR (GMD)\n`;
+    csvContent += `${report.occupancy.rate}%,${report.occupancy.occupiedSuites},${report.occupancy.availableSuites},${report.occupancy.totalSuites},${report.occupancy.adr},${report.occupancy.revpar}\n\n`;
 
-    csvContent += `Total Revenue ($),Paid Revenue ($),Pending Revenue ($),Total Bookings,Average Length of Stay (Nights)\n`;
-    csvContent += `$${report.revenue.totalRevenue},$${report.revenue.paidRevenue},$${report.revenue.pendingRevenue},${report.bookingVolume.totalBookings},${report.bookingVolume.averageLengthOfStay}\n\n`;
+    csvContent += `Total Revenue (GMD),Paid Revenue (GMD),Pending Revenue (GMD),Total Bookings,Average Length of Stay (Nights)\n`;
+    csvContent += `${report.revenue.totalRevenue},${report.revenue.paidRevenue},${report.revenue.pendingRevenue},${report.bookingVolume.totalBookings},${report.bookingVolume.averageLengthOfStay}\n\n`;
 
     // 2. Most Booked Suites
     csvContent += '--- MOST BOOKED SUITES ---\n';
-    csvContent += 'Suite Name,House Number,Booking Count,Total Nights Booked,Revenue ($),Occupancy Share (%)\n';
+    csvContent += 'Suite Name,House Number,Booking Count,Total Nights Booked,Revenue (GMD),Occupancy Share (%)\n';
     report.mostBookedSuites.forEach((s: any) => {
-      csvContent += `"${s.suiteName}",House ${s.houseNumber},${s.bookingCount},${s.totalNights},$${s.revenue},${s.occupancyShare}%\n`;
+      csvContent += `"${s.suiteName}",House ${s.houseNumber},${s.bookingCount},${s.totalNights},${s.revenue},${s.occupancyShare}%\n`;
     });
     csvContent += '\n';
 
@@ -214,11 +215,11 @@ export const AnalyticsTab: React.FC = () => {
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-serif font-bold text-white">
-                ${report.revenue.totalRevenue.toLocaleString()}
+                {formatGMD(report.revenue.totalRevenue)}
               </span>
             </div>
             <p className="text-[11px] text-emerald-400/80 mt-2 font-mono">
-              Paid: ${report.revenue.paidRevenue.toLocaleString()} | Pending: ${report.revenue.pendingRevenue.toLocaleString()}
+              Paid: {formatGMD(report.revenue.paidRevenue)} | Pending: {formatGMD(report.revenue.pendingRevenue)}
             </p>
           </div>
 
@@ -230,11 +231,11 @@ export const AnalyticsTab: React.FC = () => {
             </div>
             <div className="flex items-baseline gap-3">
               <div>
-                <span className="text-2xl font-serif font-bold text-white">${report.occupancy.adr}</span>
+                <span className="text-2xl font-serif font-bold text-white">{formatGMD(report.occupancy.adr)}</span>
                 <span className="text-[10px] text-white/40 block font-mono">ADR</span>
               </div>
               <div className="border-l border-white/10 pl-3">
-                <span className="text-2xl font-serif font-bold text-sky-300">${report.occupancy.revpar}</span>
+                <span className="text-2xl font-serif font-bold text-sky-300">{formatGMD(report.occupancy.revpar)}</span>
                 <span className="text-[10px] text-white/40 block font-mono">RevPAR</span>
               </div>
             </div>
@@ -253,7 +254,7 @@ export const AnalyticsTab: React.FC = () => {
               <span className="text-xs font-mono text-white/50">Reservations</span>
             </div>
             <p className="text-[11px] text-white/40 mt-2 font-mono">
-              Avg Stay: {report.bookingVolume.averageLengthOfStay} nights &bull; Avg Value: ${report.revenue.averageBookingValue}
+              Avg Stay: {report.bookingVolume.averageLengthOfStay} nights &bull; Avg Value: {formatGMD(report.revenue.averageBookingValue)}
             </p>
           </div>
         </div>
@@ -268,7 +269,7 @@ export const AnalyticsTab: React.FC = () => {
               <div>
                 <h3 className="text-base font-serif font-bold text-white flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-[#C5A059]" />
-                  Monthly Revenue Performance ($)
+                  Monthly Revenue Performance (GMD)
                 </h3>
                 <p className="text-xs text-white/50 mt-1">
                   12-Month historical revenue timeline derived from verified bookings.
@@ -290,7 +291,7 @@ export const AnalyticsTab: React.FC = () => {
                   <YAxis stroke="#ffffff50" tick={{ fontSize: 11 }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0F172A', borderColor: '#ffffff20', borderRadius: '12px', color: '#fff' }}
-                    formatter={(val: any) => [`$${val}`, 'Revenue']}
+                    formatter={(val: any) => [formatGMD(Number(val)), 'Revenue']}
                   />
                   <Area type="monotone" dataKey="revenue" stroke="#C5A059" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
                 </AreaChart>
@@ -351,7 +352,7 @@ export const AnalyticsTab: React.FC = () => {
                     <p className="text-white/40 font-mono text-[11px]">House {s.houseNumber} &bull; {s.bookingCount} Reservations &bull; {s.totalNights} Nights</p>
                   </div>
                   <div className="sm:text-right font-mono">
-                    <span className="text-[#C5A059] font-bold text-sm">${s.revenue.toLocaleString()}</span>
+                    <span className="text-[#C5A059] font-bold text-sm">{formatGMD(s.revenue)}</span>
                     <span className="text-emerald-400/80 block text-[10px]">{s.occupancyShare}% of suite nights</span>
                   </div>
                 </div>
@@ -379,7 +380,7 @@ export const AnalyticsTab: React.FC = () => {
                   <YAxis dataKey="label" type="category" stroke="#ffffff50" tick={{ fontSize: 10 }} width={120} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0F172A', borderColor: '#ffffff20', borderRadius: '12px', color: '#fff' }}
-                    formatter={(val: any) => [`$${val}`, 'Processed']}
+                    formatter={(val: any) => [formatGMD(Number(val)), 'Processed']}
                   />
                   <Bar dataKey="totalAmount" fill="#34D399" radius={[0, 8, 8, 0]} />
                 </BarChart>

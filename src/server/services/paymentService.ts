@@ -68,7 +68,7 @@ export class PaymentService {
               bookingId: booking.id,
               amount: totalAmount,
               paidAmount: initialPaid,
-              currency: req.currency || 'USD',
+              currency: req.currency || 'GMD',
               status: statusEnum as any,
               method: methodEnum as any,
               provider: req.provider,

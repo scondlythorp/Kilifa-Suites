@@ -209,7 +209,7 @@ model Payment {
   id             String        @id @default(uuid())
   amount         Float
   paidAmount     Float         @default(0)
-  currency       String        @default("USD")
+  currency       String        @default("GMD")
   status         PaymentStatus @default(PENDING)
   method         PaymentMethod @default(CASH)
   provider       String        @default("CASH")

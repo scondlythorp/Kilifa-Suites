@@ -100,7 +100,8 @@ export class WhatsAppNotificationProvider implements INotificationProvider {
         return `✅ *Booking Confirmed — Kilifa Suites*\n\nHello *${name}*,\nYour stay at *${suite}* is officially CONFIRMED!\n\n📌 *Ref:* ${ref}\n🗓️ *Check-in:* ${payload.checkInDate || 'TBD'}\n🗓️ *Check-out:* ${payload.checkOutDate || 'TBD'}\n\nNeed assistance? Reply directly to this WhatsApp chat.`;
 
       case 'PAYMENT_RECEIVED':
-        return `💳 *Payment Confirmation*\n\nDear *${name}*,\nWe received your payment of *${payload.currency || '$'}${payload.amount || 0}* (${payload.paymentMethod || 'Gateway'}) for booking *${ref}*.\n\nThank you for choosing Kilifa Suites!`;
+        const waAmt = `${payload.currency === 'USD' ? '$' : 'D '}${Number(payload.amount || 0).toLocaleString()}`;
+        return `💳 *Payment Confirmation*\n\nDear *${name}*,\nWe received your payment of *${waAmt}* (${payload.paymentMethod || 'Gateway'}) for booking *${ref}*.\n\nThank you for choosing Kilifa Suites!`;
 
       case 'CHECK_IN_REMINDER':
         return `🏨 *Upcoming Stay Reminder*\n\nDear *${name}*,\nWe are excited to welcome you to *${suite}* on *${payload.checkInDate}*!\n\nOur front desk concierge is at your service. Safe travels! ✨`;

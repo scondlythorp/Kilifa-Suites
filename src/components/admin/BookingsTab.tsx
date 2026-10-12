@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Check,
 } from 'lucide-react';
+import { formatGMD } from '../../utils/currency';
 
 interface BookingsTabProps {
   bookings: any[];
@@ -223,7 +224,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
                       <div className="text-[10px] text-white/40">to {b.checkOut} ({b.totalNights}n)</div>
                     </td>
                     <td className="p-4 text-white/70 font-mono">{b.guestsCount} Guests</td>
-                    <td className="p-4 font-bold text-emerald-400">${b.totalEstimatedPrice}</td>
+                    <td className="p-4 font-bold text-emerald-400">{formatGMD(b.totalEstimatedPrice)}</td>
                     <td className="p-4">
                       <span
                         className={`px-2.5 py-1 rounded-full text-[10px] font-mono tracking-wider border font-bold ${getStatusBadge(
@@ -337,7 +338,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50 font-mono">Total Price:</span>
-                  <span className="text-emerald-400 font-bold">${selectedBooking.totalEstimatedPrice}</span>
+                  <span className="text-emerald-400 font-bold">{formatGMD(selectedBooking.totalEstimatedPrice)}</span>
                 </div>
               </div>
 
@@ -362,7 +363,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
                   <div>
                     <span className="text-white/40 block">Paid Amount:</span>
                     <span className="font-bold text-white">
-                      ${selectedBooking.payment?.paidAmount || 0} / ${selectedBooking.totalEstimatedPrice}
+                      {formatGMD(selectedBooking.payment?.paidAmount || 0)} / {formatGMD(selectedBooking.totalEstimatedPrice)}
                     </span>
                   </div>
                   {selectedBooking.payment?.transactionRef && (
@@ -389,7 +390,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
-                      placeholder="Amount ($)"
+                      placeholder="Amount (GMD)"
                       value={partialAmount}
                       onChange={(e) => setPartialAmount(e.target.value)}
                       className="w-28 px-2.5 py-1.5 bg-black border border-white/10 rounded-lg text-xs text-white placeholder-white/40 focus:border-[#C5A059] focus:outline-none"

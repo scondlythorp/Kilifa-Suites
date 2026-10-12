@@ -32,8 +32,8 @@ export class CashBankAdapter implements IPaymentAdapter {
 
     const instructions =
       this.provider === 'CASH'
-        ? `Cash payment of $${paidAmount} received at Kilifa Suites Front Desk.`
-        : `Bank Wire Transfer record created for $${paidAmount}. Standard Chartered Bank Gambia / Ecobank.`;
+        ? `Cash payment of D ${Number(paidAmount).toLocaleString()} received at Kilifa Suites Front Desk.`
+        : `Bank Wire Transfer record created for D ${Number(paidAmount).toLocaleString()}. Ecobank Gambia / Trust Bank Gambia.`;
 
     return {
       paymentId: '',
@@ -41,7 +41,7 @@ export class CashBankAdapter implements IPaymentAdapter {
       bookingReference: req.bookingReference,
       amount: req.amount,
       paidAmount,
-      currency: req.currency || 'USD',
+      currency: req.currency || 'GMD',
       provider: this.provider,
       status,
       transactionRef: txRef,
@@ -56,7 +56,7 @@ export class CashBankAdapter implements IPaymentAdapter {
       status: 'SUCCESSFUL',
       amount: 0,
       paidAmount: 0,
-      currency: 'USD',
+      currency: 'GMD',
       provider: this.provider,
       gatewayMessage: `${this.provider} transaction verified by Receptionist`,
     };

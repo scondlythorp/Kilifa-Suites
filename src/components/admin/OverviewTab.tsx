@@ -13,6 +13,7 @@ import {
   XCircle,
   ArrowRight,
 } from 'lucide-react';
+import { formatGMD } from '../../utils/currency';
 
 interface OverviewTabProps {
   stats: {
@@ -150,7 +151,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
           <div className="text-3xl font-serif text-emerald-400 font-bold">
-            ${stats.totalRevenue.toLocaleString()}
+            {formatGMD(stats.totalRevenue)}
           </div>
           <p className="text-xs text-emerald-400/80 mt-1">Confirmed & checked-in total</p>
         </div>
@@ -227,7 +228,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                       {b.checkIn} to {b.checkOut} ({b.totalNights}n)
                     </td>
                     <td className="py-3 text-white/70">{b.guestsCount}</td>
-                    <td className="py-3 font-semibold text-emerald-400">${b.totalEstimatedPrice}</td>
+                    <td className="py-3 font-semibold text-emerald-400">{formatGMD(b.totalEstimatedPrice)}</td>
                     <td className="py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -296,7 +297,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     </span>
                   </td>
                   <td className="py-3 text-right font-bold text-emerald-400">
-                    ${b.totalEstimatedPrice}
+                    {formatGMD(b.totalEstimatedPrice)}
                   </td>
                 </tr>
               ))}
