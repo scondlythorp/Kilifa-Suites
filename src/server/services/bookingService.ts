@@ -123,15 +123,23 @@ class BookingService {
     const end = new Date(data.checkOut);
 
     // Static fallback lookup if database is unavailable or initializing
+    const targetSuiteLower = targetSuiteId.toLowerCase();
     const staticSuite = SUITES_DATA.find(
-      (s) => s.id === targetSuiteId || s.slug === targetSuiteId
+      (s) =>
+        s.id.toLowerCase() === targetSuiteLower ||
+        s.slug.toLowerCase() === targetSuiteLower ||
+        s.name.toLowerCase() === targetSuiteLower
     );
 
     try {
       // 1. Resolve Suite Authoritatively from Database
       let dbSuite = await prisma.suite.findFirst({
         where: {
-          OR: [{ id: targetSuiteId }, { slug: targetSuiteId }],
+          OR: [
+            { id: targetSuiteId },
+            { slug: targetSuiteId },
+            { name: { equals: targetSuiteId, mode: 'insensitive' } },
+          ],
         },
       });
 
