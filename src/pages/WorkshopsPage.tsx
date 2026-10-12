@@ -92,7 +92,7 @@ export const WorkshopsPage: React.FC = () => {
               <div className="p-2 rounded-2xl bg-[#111111] border border-white/10 shadow-2xl overflow-hidden group">
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-black">
                   <img
-                    src="/images/suites/kilifa-suites-parlor-01.jpg"
+                    src="/media/images/kilifa-parlor-01.jpeg"
                     alt="Kilifa Suites Executive Workshop & Meeting Setup"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />

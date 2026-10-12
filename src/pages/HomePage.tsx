@@ -200,8 +200,8 @@ export const HomePage: React.FC = () => {
               <div className="p-2 rounded-2xl bg-[#111111] border border-white/10 shadow-2xl relative overflow-hidden group">
                 <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black">
                   <img
-                    src="/images/property/exterior/kilifa-suites-exterior-night-01.jpg"
-                    alt="Kilifa Suites Estate Elevation at Night"
+                    src="/media/images/kilifa-property-two-suite-overview-01.jpeg"
+                    alt="Kilifa Suites Estate Compound and Residences"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
@@ -370,12 +370,13 @@ export const HomePage: React.FC = () => {
               <VideoPlaceholder
                 title="Official Kilifa Suites Property & Compound Walkthrough"
                 duration="02:45"
-                thumbnail="/images/property/exterior/kilifa-suites-courtyard-day-01.jpg"
+                thumbnail="/media/images/kilifa-property-two-suite-overview-01.jpeg"
                 onPlayClick={() =>
                   setSelectedVideo({
                     id: 'hero-vid',
                     type: 'video',
-                    url: '/videos/property/kilifa-suites-property-tour.mp4',
+                    url: '/media/videos/kilifa-complete-property-tour-01.mp4',
+                    posterImage: '/media/images/kilifa-property-two-suite-overview-01.jpeg',
                     caption: 'Kilifa Suites Official Estate & Compound Walkthrough',
                     alt: 'Kilifa Suites Estate Video',
                     category: 'grounds',

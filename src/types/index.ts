@@ -36,7 +36,7 @@ export interface Media {
   type: 'image' | 'video';
   url: string;
   caption: string;
-  alt: string;
+  alt?: string;
   category: 'photos' | 'videos' | 'exterior' | 'interior' | 'suites' | 'bedrooms' | 'parlors' | 'bathrooms' | 'amenities' | 'staff' | 'security' | 'compound' | 'grounds' | 'workshops' | 'location' | 'brand' | 'other' | string;
   filename?: string;
   title?: string;

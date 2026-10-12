@@ -117,8 +117,8 @@ export const AboutPage: React.FC = () => {
               <div className="p-2 rounded-2xl bg-[#111111] border border-white/10 shadow-2xl overflow-hidden group">
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-black">
                   <img
-                    src="/images/property/exterior/kilifa-suites-courtyard-day-01.jpg"
-                    alt="Kilifa Suites Estate Courtyard & Colonnade"
+                    src="/media/images/kilifa-property-exterior-01.jpeg"
+                    alt="Kilifa Suites Estate Compound and Colonnade"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -147,7 +147,7 @@ export const AboutPage: React.FC = () => {
               <div className="p-2 rounded-2xl bg-[#161616] border border-white/10 overflow-hidden group">
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-black">
                   <img
-                    src="/images/staff/kilifa-suites-staff-management-01.jpg"
+                    src="/media/images/kilifa-staff-00.jpeg"
                     alt="Musa Njie - Founder & Proprietor"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />

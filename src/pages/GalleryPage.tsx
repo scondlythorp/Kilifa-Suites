@@ -59,7 +59,17 @@ export const GalleryPage: React.FC = () => {
       result = result.filter((m) => m.type === 'video');
     } else if (selectedCategory !== 'All') {
       const catLower = selectedCategory.toLowerCase();
-      result = result.filter((m) => m.category.toLowerCase() === catLower);
+      if (catLower === 'interior') {
+        result = result.filter((m) => ['interior', 'suites', 'parlors', 'bedrooms', 'amenities'].includes(m.category.toLowerCase()));
+      } else if (catLower === 'exterior') {
+        result = result.filter((m) => ['exterior', 'compound', 'property', 'grounds'].includes(m.category.toLowerCase()));
+      } else if (catLower === 'compound') {
+        result = result.filter((m) => ['compound', 'exterior', 'property', 'security', 'grounds'].includes(m.category.toLowerCase()));
+      } else if (catLower === 'suites') {
+        result = result.filter((m) => ['suites', 'parlors', 'bedrooms'].includes(m.category.toLowerCase()));
+      } else {
+        result = result.filter((m) => m.category.toLowerCase() === catLower);
+      }
     }
 
     // Filter by selected suite if specified

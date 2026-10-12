@@ -3,7 +3,10 @@
  * Connects frontend React components exclusively to backend REST API endpoints.
  */
 
-const API_BASE_URL = '/api';
+// In production split deployments (e.g. Vercel frontend + Render backend), VITE_API_URL can be set to "https://api.kilifasuites.com/api" or "https://<render-service>.onrender.com/api".
+// When empty or running unified/locally, it defaults to the relative '/api' endpoint.
+const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || '/api';
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 export function getStoredToken(): string | null {
   return localStorage.getItem('kilifa_token');
@@ -31,7 +34,8 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const response = await fetch(`${API_BASE_URL}${normalizedEndpoint}`, {
     ...options,
     headers,
   });

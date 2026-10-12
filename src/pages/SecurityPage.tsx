@@ -5,7 +5,6 @@ import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
 import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
-import { ImagePlaceholder } from '../components/common/ImagePlaceholder';
 import { AccessCard } from '../types';
 import {
   ShieldCheck,
@@ -159,6 +158,48 @@ export const SecurityPage: React.FC = () => {
             title="ESTATE SECURITY HIGHLIGHTS"
             description="Kilifa Suites combines physical fencing, electronic monitoring, and trained personnel to ensure guest tranquility."
           />
+
+          {/* Featured Security Personnel Card */}
+          <div className="mb-10 p-6 sm:p-8 rounded-3xl bg-[#111111] border border-white/10 shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            <div className="md:col-span-5">
+              <div className="p-2 rounded-2xl bg-[#161616] border border-white/10 overflow-hidden group">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black">
+                  <img
+                    src="/media/images/kilifa-security-officer-01.jpeg"
+                    alt="24/7 Dedicated Uniformed Security Personnel at Kilifa Suites"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3 text-xs text-white">
+                    <span className="font-serif italic text-sm text-[#C5A059] block">24/7 Security Presence</span>
+                    <span className="text-[10px] text-white/70">Manned Compound Gates & Patrols</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-7 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-[#C5A059]/40 text-[#C5A059] text-[10px] font-semibold uppercase tracking-[0.25em]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+                <span>On-Site Guard Detail</span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-serif italic text-white">
+                Dedicated 24-Hour Uniformed Personnel
+              </h3>
+              <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-light">
+                At Kilifa Suites, guest safety and uninterrupted peace of mind are paramount. Our property features continuously stationed, uniformed security officers safeguarding compound entry points, verifying incoming guests, and maintaining perimeter safety around the clock in Tabokoto, Soma.
+              </p>
+              <div className="pt-2 flex flex-wrap gap-4 text-xs text-white/60">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#C5A059]" />
+                  <span>Continuous Gate Surveillance</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#C5A059]" />
+                  <span>Visitor Verification Protocols</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {securityFeatures.map((feat, idx) => {

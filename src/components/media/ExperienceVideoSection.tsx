@@ -26,8 +26,9 @@ export const ExperienceVideoSection: React.FC<ExperienceVideoSectionProps> = ({ 
   const mainVideo: Media = media || {
     id: 'med-vid-hero-main',
     type: 'video',
-    url: '/placeholders/video-tour-main.mp4',
-    thumbnail: '/placeholders/video-thumb-main.jpg',
+    url: '/media/videos/kilifa-complete-property-tour-01.mp4',
+    thumbnail: '/media/images/kilifa-property-two-suite-overview-01.jpeg',
+    posterImage: '/media/images/kilifa-property-two-suite-overview-01.jpeg',
     caption: 'Official Property Walkthrough: Kilifa Suites Compound & Executive Interiors',
     alt: 'Cinematic Property Tour of Kilifa Suites in Soma',
     category: 'compound',
@@ -69,8 +70,16 @@ export const ExperienceVideoSection: React.FC<ExperienceVideoSectionProps> = ({ 
               onClick={() => setVideoModalOpen(true)}
               className="relative w-full aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-[#121212] via-[#1A1A1A] to-black border border-[#C5A059]/40 shadow-2xl group cursor-pointer"
             >
+              {/* Real Video Thumbnail Image */}
+              {mainVideo.thumbnail && (
+                <img
+                  src={mainVideo.thumbnail}
+                  alt={mainVideo.alt || mainVideo.caption}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-60"
+                />
+              )}
               {/* Background gradient texture / frame */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#C5A059]/20 via-transparent to-black/80 group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/40" />
 
               {/* Top bar controls simulation */}
               <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between text-white/80 text-xs">

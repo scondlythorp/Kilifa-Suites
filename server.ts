@@ -28,15 +28,51 @@ import { apiGlobalRateLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // Security Headers & CORS Configuration
   app.use(securityHeaders);
+
+  const rawCorsOrigin = process.env.CORS_ORIGIN;
+  const allowedOrigins = rawCorsOrigin
+    ? rawCorsOrigin.split(',').map((s) => s.trim()).filter(Boolean)
+    : [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+        'https://kilifasuites.com',
+        'https://www.kilifasuites.com',
+      ];
+
   app.use(
     cors({
-      origin: '*',
+      origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, health-checks)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        // In non-production, allow all localhost and 127.0.0.1 variations
+        if (
+          process.env.NODE_ENV !== 'production' &&
+          (/^http:\/\/localhost(:\d+)?$/.test(origin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin))
+        ) {
+          return callback(null, true);
+        }
+
+        // Allow Vercel preview/production deployments (*.vercel.app)
+        if (origin.endsWith('.vercel.app')) {
+          return callback(null, true);
+        }
+
+        callback(null, false);
+      },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      credentials: true,
     })
   );
 
@@ -84,6 +120,29 @@ async function startServer() {
   app.use('/api/access', accessControlRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/analytics', analyticsRoutes);
+
+  // Serve /media static directory directly with byte-range and caching support
+  app.use(
+    '/media',
+    express.static(path.join(process.cwd(), 'public/media'), {
+      maxAge: '1d',
+      acceptRanges: true,
+    })
+  );
+  // Also provide direct fallbacks for /images and /videos
+  app.use(
+    '/images',
+    express.static(path.join(process.cwd(), 'public/media/images'), {
+      maxAge: '1d',
+    })
+  );
+  app.use(
+    '/videos',
+    express.static(path.join(process.cwd(), 'public/media/videos'), {
+      maxAge: '1d',
+      acceptRanges: true,
+    })
+  );
 
   // Error Handler Middleware for API routes
   app.use(errorHandler);
