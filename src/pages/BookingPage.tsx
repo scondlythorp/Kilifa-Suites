@@ -22,11 +22,7 @@ import {
   AlertCircle,
   Clock,
   Sparkles,
-  CreditCard,
-  Wallet,
-  Globe,
   ArrowRight,
-  QrCode,
 } from 'lucide-react';
 
 interface FormErrors {
@@ -102,14 +98,12 @@ export const BookingPage: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [specialRequests, setSpecialRequests] = useState<string>('');
-  const [selectedProvider, setSelectedProvider] = useState<string>('WAVE');
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdBooking, setCreatedBooking] = useState<any | null>(null);
-  const [paymentResult, setPaymentResult] = useState<any | null>(null);
 
   const selectedSuite: Suite = useMemo(() => {
     return SUITES_DATA.find((s) => s.id === selectedSuiteId) || SUITES_DATA[0];
@@ -222,25 +216,17 @@ export const BookingPage: React.FC = () => {
       const bookingRes = await api.bookings.create(bookingPayload);
       const bookingData = bookingRes.data || bookingRes;
       setCreatedBooking(bookingData);
-
-      // 2. Initiate Payment through Payment Abstraction Layer
-      const paymentRes = await api.payments.initiate({
-        bookingId: bookingData.id,
-        bookingReference: bookingData.bookingReference,
-        amount: bookingData.totalEstimatedPrice || totalPrice,
-        currency: 'GMD',
-        provider: selectedProvider,
-        guestName: fullName.trim(),
-        guestEmail: email.trim(),
-        guestPhone: phone.trim(),
-        notes: specialRequests.trim(),
-      });
-
-      setPaymentResult(paymentRes.data || paymentRes);
       setSubmitted(true);
       setSubmitError(null);
 
-      // 3. Dispatch Instant Reservation Notification via FormSubmit to modoulaminthorp4@gmail.com
+      // Save locally for guest and staff reference
+      try {
+        const existingRaw = localStorage.getItem('kilifa_guest_reservations');
+        const existing = existingRaw ? JSON.parse(existingRaw) : [];
+        localStorage.setItem('kilifa_guest_reservations', JSON.stringify([bookingData, ...existing]));
+      } catch {}
+
+      // 2. Dispatch Instant Reservation Notification via FormSubmit to modoulaminthorp4@gmail.com
       fetch('https://formsubmit.co/ajax/modoulaminthorp4@gmail.com', {
         method: 'POST',
         headers: {
@@ -258,7 +244,6 @@ export const BookingPage: React.FC = () => {
           'Total Nights': `${nightCount} night(s)`,
           'Guest Count': `${guestsCount} guest(s)`,
           'Estimated Total': formatGMD(totalPrice),
-          'Payment Provider': selectedProvider,
           'Special Requests': specialRequests.trim() || 'None',
           _subject: `🛎️ Kilifa Suites Reservation: ${selectedSuite.name} - ${fullName.trim()} (${checkIn} to ${checkOut})`,
           _template: 'table',
@@ -266,7 +251,7 @@ export const BookingPage: React.FC = () => {
         }),
       }).catch((err) => console.warn('FormSubmit notification note:', err));
     } catch (err: any) {
-      console.error('[BOOKING PAYMENT ERROR]', err);
+      console.error('[BOOKING ERROR]', err);
 
       // Handle 405 or environment proxy failure by producing a resilient confirmation
       if (
@@ -293,36 +278,10 @@ export const BookingPage: React.FC = () => {
           totalEstimatedPrice: totalPrice,
           specialRequests: specialRequests.trim(),
           status: 'PENDING',
-          payment: {
-            id: `pmt-${Date.now()}`,
-            amount: totalPrice,
-            status: 'PENDING',
-          },
-          accessCard: {
-            id: `card-${Date.now()}`,
-            cardNumber: `AC-${fallbackRef}`,
-            status: 'INACTIVE',
-          },
           createdAt: new Date().toISOString(),
         };
 
         setCreatedBooking(fallbackBooking);
-        setPaymentResult({
-          paymentId: `PAY-${Math.floor(10000000 + Math.random() * 90000000)}`,
-          bookingId: fallbackBooking.id,
-          bookingReference: fallbackRef,
-          amount: totalPrice,
-          paidAmount: selectedProvider === 'CASH' ? totalPrice : 0,
-          currency: 'GMD',
-          provider: selectedProvider,
-          status: selectedProvider === 'CASH' ? 'SUCCESSFUL' : 'PENDING',
-          transactionRef: `${selectedProvider}-${fallbackRef}-${Math.floor(100000 + Math.random() * 900000)}`,
-          instructions:
-            selectedProvider === 'CASH'
-              ? `Cash payment of ${formatGMD(totalPrice)} will be collected at Kilifa Suites Front Desk upon arrival.`
-              : `Reservation submitted with ${selectedProvider} preference. Front desk will confirm availability and payment.`,
-          requiresCustomerAction: selectedProvider !== 'CASH',
-        });
 
         // Save locally for guest and staff reference
         try {
@@ -349,7 +308,6 @@ export const BookingPage: React.FC = () => {
             'Total Nights': `${nightCount} night(s)`,
             'Guest Count': `${guestsCount} guest(s)`,
             'Estimated Total': formatGMD(totalPrice),
-            'Payment Provider': selectedProvider,
             'Special Requests': specialRequests.trim() || 'None',
             _subject: `🛎️ Kilifa Suites Reservation: ${selectedSuite.name} - ${fullName.trim()} (${checkIn} to ${checkOut})`,
             _template: 'table',
@@ -432,37 +390,6 @@ export const BookingPage: React.FC = () => {
                         <span className="text-white/50">Guests:</span>
                         <span>{guestsCount}</span>
                       </div>
-                      {paymentResult && (
-                        <div className="pt-2 border-t border-white/10 space-y-1.5 bg-white/5 p-3 rounded-lg">
-                          <div className="flex justify-between text-[#C5A059]">
-                            <span>Payment Provider:</span>
-                            <span className="font-bold">{paymentResult.provider}</span>
-                          </div>
-                          <div className="flex justify-between text-white/70">
-                            <span>Transaction Ref:</span>
-                            <span className="text-[10px] text-white/90">{paymentResult.transactionRef}</span>
-                          </div>
-                          <div className="flex justify-between text-white/70">
-                            <span>Payment Status:</span>
-                            <span className="font-bold text-emerald-400">{paymentResult.status}</span>
-                          </div>
-                          {paymentResult.instructions && (
-                            <p className="text-[11px] text-white/60 italic border-t border-white/10 pt-1 mt-1">
-                              {paymentResult.instructions}
-                            </p>
-                          )}
-                          {paymentResult.redirectUrl && (
-                            <a
-                              href={paymentResult.redirectUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-block mt-2 px-3 py-1.5 rounded bg-[#C5A059] text-black font-bold text-center w-full"
-                            >
-                              Complete Checkout on Gateway →
-                            </a>
-                          )}
-                        </div>
-                      )}
                       <div className="flex justify-between pt-2 border-t border-white/10 text-emerald-400 font-bold text-sm">
                         <span>Est. Total:</span>
                         <span>{formatGMD(totalPrice)}</span>
@@ -723,57 +650,6 @@ export const BookingPage: React.FC = () => {
                           placeholder="Airport transport inquiry, late check-in notice, dietary preferences..."
                           className="w-full px-4 py-2.5 rounded-xl bg-black text-sm text-white border border-white/20 transition-colors focus:outline-none focus:border-[#C5A059]"
                         />
-                      </div>
-
-                      {/* Payment Provider Selection Grid */}
-                      <div className="pt-4 border-t border-white/10 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-[#C5A059]">
-                            Select Payment Method
-                          </h4>
-                          <span className="text-[10px] font-mono text-white/40">
-                            Multi-Gateway Abstraction
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {[
-                            { id: 'WAVE', name: 'Wave', badge: 'Mobile Money', sub: 'Instant App' },
-                            { id: 'AFRIMONEY', name: 'Afrimoney', badge: 'Gambia Mobile', sub: '*133# USSD' },
-                            { id: 'APS_WALLET', name: 'APS Wallet', badge: 'Remittance', sub: 'Local/Diaspora' },
-                            { id: 'VISA_CARD', name: 'Visa / Card', badge: 'PCI-DSS', sub: 'Tokenized' },
-                            { id: 'PAYPAL', name: 'PayPal', badge: 'Global', sub: 'Online Express' },
-                            { id: 'CASH', name: 'Cash / Wire', badge: 'Reception', sub: 'Pay at Desk' },
-                          ].map((p) => {
-                            const isSelected = selectedProvider === p.id;
-                            return (
-                              <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => setSelectedProvider(p.id)}
-                                className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between h-20 ${
-                                  isSelected
-                                    ? 'bg-[#C5A059]/15 border-[#C5A059] text-white shadow-lg shadow-[#C5A059]/10'
-                                    : 'bg-black/40 border-white/10 text-white/70 hover:border-white/30 hover:bg-black/60'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between w-full">
-                                  <span className="font-serif font-bold text-xs">{p.name}</span>
-                                  <span
-                                    className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                                      isSelected ? 'bg-[#C5A059] text-black font-bold' : 'bg-white/10 text-white/50'
-                                    }`}
-                                  >
-                                    {p.badge}
-                                  </span>
-                                </div>
-                                <span className="text-[10px] text-white/50 font-mono block mt-1">
-                                  {p.sub}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
                       </div>
                     </div>
 

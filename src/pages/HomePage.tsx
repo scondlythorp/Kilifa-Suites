@@ -5,6 +5,7 @@ import { Section } from '../components/common/Section';
 import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
 import { SuiteCard } from '../components/suites/SuiteCard';
+import { GoogleMapEmbed } from '../components/common/GoogleMapEmbed';
 import { ImagePlaceholder } from '../components/common/ImagePlaceholder';
 import { MediaCard } from '../components/media/MediaCard';
 import { VideoModal } from '../components/media/VideoModal';
@@ -521,23 +522,13 @@ export const HomePage: React.FC = () => {
               </a>
             </div>
 
-            {/* Google Maps Placeholder */}
-            <div className="relative w-full aspect-[21/9] rounded-xl bg-gradient-to-br from-[#111111] via-[#1A1A1A] to-[#0A0A0A] border border-white/10 flex flex-col items-center justify-center p-6 text-center overflow-hidden group">
-              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#C5A059_1px,transparent_1px)] [background-size:16px_16px]" />
-              <div className="relative z-10 flex flex-col items-center max-w-md">
-                <div className="w-12 h-12 border border-[#C5A059] text-[#C5A059] flex items-center justify-center mb-3">
-                  <MapPin className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-semibold text-[#C5A059] uppercase tracking-[0.25em] mb-1">
-                  [GOOGLE MAPS PLACEHOLDER]
-                </span>
-                <p className="text-sm font-serif italic text-white">
-                  Tabokoto, Soma, Lower River Region, The Gambia
-                </p>
-                <p className="text-xs text-white/50 mt-1">
-                  Convenient access from Trans-Gambia Highway link.
-                </p>
-              </div>
+            {/* Interactive Live Google Map */}
+            <div className="w-full">
+              <GoogleMapEmbed
+                aspectClass="aspect-[21/9] sm:aspect-[16/7]"
+                heightClass="min-h-[380px]"
+                defaultZoom={14}
+              />
             </div>
           </div>
         </Container>

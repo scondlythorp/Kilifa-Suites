@@ -4,6 +4,7 @@ import { PageHeader } from '../components/common/PageHeader';
 import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
 import { Button } from '../components/common/Button';
+import { GoogleMapEmbed } from '../components/common/GoogleMapEmbed';
 import { BUSINESS_CONFIG } from '../config/business';
 import { api } from '../services/apiClient';
 import { Phone, Mail, MapPin, Send, CheckCircle2, MessageSquare, AlertCircle } from 'lucide-react';
@@ -320,6 +321,29 @@ export const ContactPage: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+        </Container>
+      </Section>
+
+      {/* Interactive Estate Location Map */}
+      <Section background="subtle">
+        <Container size="lg">
+          <div className="space-y-6">
+            <div className="text-center max-w-xl mx-auto space-y-2">
+              <span className="text-style-label text-[var(--color-secondary)]">FIND OUR ESTATE</span>
+              <h3 className="text-style-h2 text-[var(--color-text)]">
+                Visit Us in Tabokoto, Soma
+              </h3>
+              <p className="text-style-body text-xs sm:text-sm text-[var(--color-text-muted)]">
+                Kilifa Suites is located right in Tabokoto, Soma along the vital Trans-Gambia corridor.
+              </p>
+            </div>
+
+            <GoogleMapEmbed
+              aspectClass="aspect-[16/9] sm:aspect-[21/9]"
+              heightClass="min-h-[400px]"
+              defaultZoom={14}
+            />
           </div>
         </Container>
       </Section>

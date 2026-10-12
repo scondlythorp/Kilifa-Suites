@@ -5,6 +5,7 @@ import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
 import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
+import { GoogleMapEmbed } from '../components/common/GoogleMapEmbed';
 import { BUSINESS_CONFIG } from '../config/business';
 import { MapPin, Navigation, Car, Plane, Phone, ExternalLink } from 'lucide-react';
 
@@ -75,35 +76,13 @@ export const LocationPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Map Visual Frame Placeholder */}
+            {/* Right: Interactive Live Google Map */}
             <div className="lg:col-span-6">
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#12241C] border border-[var(--color-border-dark)] p-8 text-white flex flex-col justify-between shadow-xl">
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#C5A059_1px,transparent_1px)] [background-size:20px_20px]" />
-
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-md bg-[var(--color-primary)] border border-[var(--color-accent)]/40 text-[var(--color-accent)] text-xs font-bold uppercase tracking-wider">
-                    SOMA, LOWER RIVER REGIONS
-                  </span>
-                  <span className="text-xs font-mono text-emerald-300">KILIFA ESTATE</span>
-                </div>
-
-                <div className="relative z-10 text-center space-y-3 py-8">
-                  <div className="w-16 h-16 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)] flex items-center justify-center mx-auto border border-[var(--color-accent)]/50 animate-bounce">
-                    <MapPin className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold font-display text-white">
-                    Kilifa Suites Location Frame
-                  </h3>
-                  <p className="text-xs text-emerald-200/80 max-w-xs mx-auto">
-                    Tabokoto, Soma, Lower River Region, The Gambia
-                  </p>
-                </div>
-
-                <div className="relative z-10 pt-4 border-t border-emerald-900/60 flex items-center justify-between text-xs text-emerald-300/80 font-mono">
-                  <span>Owner: Alhaji Kilifa</span>
-                  <span>12 Suites (Houses 1 & 2)</span>
-                </div>
-              </div>
+              <GoogleMapEmbed
+                aspectClass="aspect-square sm:aspect-[4/3] lg:aspect-square"
+                heightClass="min-h-[420px]"
+                defaultZoom={14}
+              />
             </div>
           </div>
         </Container>
