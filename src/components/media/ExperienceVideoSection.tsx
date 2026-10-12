@@ -26,7 +26,7 @@ export const ExperienceVideoSection: React.FC<ExperienceVideoSectionProps> = ({ 
   const mainVideo: Media = media || {
     id: 'med-vid-hero-main',
     type: 'video',
-    url: '/media/videos/kilifa-complete-property-tour-01.mp4',
+    url: '/media/videos/kilifa-interior-tour-01.mp4',
     thumbnail: '/media/images/kilifa-property-two-suite-overview-01.jpeg',
     posterImage: '/media/images/kilifa-property-two-suite-overview-01.jpeg',
     caption: 'Official Property Walkthrough: Kilifa Suites Compound & Executive Interiors',

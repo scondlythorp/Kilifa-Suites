@@ -6,7 +6,6 @@ import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
 import { SuiteCard } from '../components/suites/SuiteCard';
 import { ImagePlaceholder } from '../components/common/ImagePlaceholder';
-import { VideoPlaceholder } from '../components/common/VideoPlaceholder';
 import { MediaCard } from '../components/media/MediaCard';
 import { VideoModal } from '../components/media/VideoModal';
 import { LightboxModal } from '../components/media/LightboxModal';
@@ -47,6 +46,7 @@ export const HomePage: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<Media | null>(null);
   const [selectedLightboxMedia, setSelectedLightboxMedia] = useState<Media | null>(null);
 
+  // Hero Video Animation State (20-second loop)
   // Featured Suites (using official dataset)
   const featuredSuites = [
     SUITES_DATA[0], // DAR
@@ -134,104 +134,85 @@ export const HomePage: React.FC = () => {
     <>
       <SEOHead configKey="home" />
 
-      {/* HERO SECTION */}
-      <section className="relative bg-[#0A0A0A] text-white pt-32 pb-24 sm:pt-40 sm:pb-32 overflow-hidden border-b border-white/10">
-        {/* Ambient Subtle Glow */}
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#C5A059_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
-        <div className="absolute top-1/4 -right-32 w-96 h-96 bg-[#C5A059]/10 rounded-full blur-3xl pointer-events-none" />
+      {/* HERO SECTION WITH LOOPING VIDEO BACKGROUND (HERO LOOP) */}
+      <section className="relative w-full min-h-[90vh] sm:min-h-screen flex items-center justify-center overflow-hidden border-b border-white/10 bg-[#0A0A0A] text-white">
+        {/* Full-Width Background Video - 100% width & 100% height */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
+          <video
+            src="/media/videos/kilifa-property-exterior-tour-01.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/media/images/kilifa-property-exterior-01.jpeg"
+            className="w-full h-full object-cover object-center scale-105"
+          />
+          {/* Semi-transparent black overlay at 45% for high text contrast and legibility */}
+          <div className="absolute inset-0 bg-black/45 z-[1]" />
+          {/* Cinematic top & bottom atmospheric gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-black/60 z-[2]" />
+          <div className="absolute inset-0 bg-[radial-gradient(#C5A059_1px,transparent_1px)] [background-size:32px_32px] opacity-10 z-[2]" />
+        </div>
 
-        <Container size="xl" className="relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Column: Hero Text */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded bg-white/5 border border-[#C5A059]/30 text-[#C5A059] text-[10px] font-semibold uppercase tracking-[0.3em]">
-                <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
-                <span>Tabokoto, Soma, Lower River Region, The Gambia</span>
-              </div>
+        {/* Subtle Ambient Gold Glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[360px] bg-[#C5A059]/10 rounded-full blur-3xl pointer-events-none z-[2]" />
 
-              <h1 className="text-style-display text-white tracking-tight font-serif italic">
-                Your Private Stay in Soma
-              </h1>
-
-              <p className="text-style-body text-white/70 text-base sm:text-xl max-w-2xl leading-relaxed font-light">
-                Experience comfort, security and modern hospitality at Kilifa Suites.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap items-center gap-4">
-                <Button
-                  to="/booking"
-                  variant="primary"
-                  size="lg"
-                  leftIcon={<Calendar className="w-4 h-4" />}
-                >
-                  Book Your Stay
-                </Button>
-
-                <Button
-                  to="/suites"
-                  variant="outline"
-                  size="lg"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                >
-                  Explore Our Suites
-                </Button>
-              </div>
-
-              {/* Key Location Ribbon */}
-              <div className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-white/10 text-xs text-white/60">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-[#C5A059] shrink-0" />
-                  <span>2 Houses • 12 Suites</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#C5A059] shrink-0" />
-                  <span>24/7 Solar Backup</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0" />
-                  <span>Gated Compound</span>
-                </div>
-              </div>
+        {/* Hero Content Layer Sitting on Top of Video */}
+        <Container size="xl" className="relative z-10 pt-32 pb-20 sm:pt-40 sm:pb-28 flex flex-col items-center text-center">
+          <div className="max-w-4xl mx-auto flex flex-col items-center space-y-6 sm:space-y-8">
+            {/* Location Pill */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-md border border-[#C5A059]/40 text-[#C5A059] text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] shadow-2xl">
+              <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
+              <span>Tabokoto, Soma, Lower River Region, The Gambia</span>
             </div>
 
-            {/* Right Column: Hero Media Showcase */}
-            <div className="lg:col-span-5 space-y-4">
-              <div className="p-2 rounded-2xl bg-[#111111] border border-white/10 shadow-2xl relative overflow-hidden group">
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black">
-                  <img
-                    src="/media/images/kilifa-property-two-suite-overview-01.jpeg"
-                    alt="Kilifa Suites Estate Compound and Residences"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                  <div className="absolute top-3 left-3 px-3 py-1 rounded bg-black/80 backdrop-blur-md border border-[#C5A059]/40 text-[#C5A059] text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1.5 z-10">
-                    <Sparkles className="w-3 h-3 text-[#C5A059]" />
-                    <span>Courtyard & Colonnade View</span>
-                  </div>
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white z-10">
-                    <div>
-                      <span className="font-serif italic text-sm text-white block">House 1 & House 2 Compound</span>
-                      <span className="text-[10px] text-white/70">Tabokoto, Soma, Lower River Region</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-[#C5A059] text-black font-semibold text-[10px] uppercase">
-                      24/7 Gated
-                    </span>
-                  </div>
-                </div>
-              </div>
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif italic text-white tracking-tight leading-[1.08] drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]">
+              Your Private Stay in Soma
+            </h1>
 
-              <div className="p-4 rounded-xl bg-[#111111] border border-white/10 flex items-center justify-between text-xs text-white/70">
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-[#C5A059]" />
-                  <div>
-                    <span className="font-semibold text-white block">Location Address</span>
-                    <span>Tabokoto, Soma, Lower River Region, The Gambia</span>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[#C5A059] font-mono text-[11px] font-bold">
-                  Soma, GM
-                </span>
+            {/* Subtext */}
+            <p className="text-base sm:text-xl md:text-2xl text-white/90 max-w-2xl font-light leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+              Experience comfort, security and modern hospitality at Kilifa Suites.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-4 sm:gap-5">
+              <Button
+                to="/booking"
+                variant="primary"
+                size="lg"
+                leftIcon={<Calendar className="w-4 h-4" />}
+                className="shadow-2xl shadow-[#C5A059]/25 hover:shadow-[#C5A059]/40 text-base"
+              >
+                Book Your Stay
+              </Button>
+
+              <Button
+                to="/suites"
+                variant="outline"
+                size="lg"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                className="bg-black/50 backdrop-blur-md border-white/30 hover:border-[#C5A059] text-white hover:bg-black/70 text-base"
+              >
+                Explore Our Suites
+              </Button>
+            </div>
+
+            {/* Key Ribbon / Luxury Highlights */}
+            <div className="pt-8 sm:pt-12 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 border-t border-white/15 text-xs text-white/80">
+              <div className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
+                <Building2 className="w-4 h-4 text-[#C5A059] shrink-0" />
+                <span className="font-medium text-white/90">2 Houses • 12 Suites</span>
+              </div>
+              <div className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
+                <Zap className="w-4 h-4 text-[#C5A059] shrink-0" />
+                <span className="font-medium text-white/90">24/7 Solar Backup Power</span>
+              </div>
+              <div className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
+                <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0" />
+                <span className="font-medium text-white/90">24/7 Gated Perimeter Security</span>
               </div>
             </div>
           </div>
@@ -366,26 +347,6 @@ export const HomePage: React.FC = () => {
           />
 
           <div className="space-y-6">
-            <div className="p-3 rounded-2xl bg-[#111111] border border-white/10 shadow-2xl">
-              <VideoPlaceholder
-                title="Official Kilifa Suites Property & Compound Walkthrough"
-                duration="02:45"
-                thumbnail="/media/images/kilifa-property-two-suite-overview-01.jpeg"
-                onPlayClick={() =>
-                  setSelectedVideo({
-                    id: 'hero-vid',
-                    type: 'video',
-                    url: '/media/videos/kilifa-complete-property-tour-01.mp4',
-                    posterImage: '/media/images/kilifa-property-two-suite-overview-01.jpeg',
-                    caption: 'Kilifa Suites Official Estate & Compound Walkthrough',
-                    alt: 'Kilifa Suites Estate Video',
-                    category: 'grounds',
-                    duration: '02:45',
-                  })
-                }
-              />
-            </div>
-
             <div className="flex justify-center">
               <Button
                 to="/gallery"

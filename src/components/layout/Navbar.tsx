@@ -70,16 +70,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       }`}
     >
       <Container size="xl" className="flex items-center justify-between">
-        {/* Brand Logo & Name */}
-        <Link to="/" className="flex items-center gap-3 group focus:outline-none">
-          <div className="w-8 h-8 border border-[#C5A059] flex items-center justify-center group-hover:bg-[#C5A059] transition-colors">
-            <span className="text-[#C5A059] font-serif text-lg italic group-hover:text-black transition-colors">K</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-base sm:text-lg font-light tracking-[0.25em] text-white uppercase leading-tight group-hover:text-[#C5A059] transition-colors">
-              {BUSINESS_CONFIG.name}
-            </span>
-          </div>
+        {/* Brand Logo */}
+        <Link to="/" className="flex items-center group focus:outline-none py-0.5">
+          <img
+            src="/media/images/kilifa-logo.jpeg"
+            alt={BUSINESS_CONFIG.name}
+            className="h-9 sm:h-11 w-auto object-contain transition-all duration-300 group-hover:scale-105 group-hover:brightness-125"
+            style={{
+              mixBlendMode: 'screen',
+              filter: 'invert(1) contrast(1.25) brightness(1.15)',
+            }}
+          />
         </Link>
 
         {/* Desktop Navigation Links */}
