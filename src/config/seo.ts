@@ -12,7 +12,7 @@ export const SEO_CONFIG: Record<string, SEOMetadata> = {
   home: {
     title: 'Kilifa Suites | Luxury Guest House in Soma, Lower River Region, The Gambia',
     description: 'Experience refined luxury, uncompromised security, and authentic Gambian warmth at Kilifa Suites in Tabokoto, Soma. Featuring 12 executive suites across 2 private houses.',
-    keywords: 'Kilifa Suites, Soma guest house, Lower River Region Gambia, luxury accommodation Soma, Alhaji Kilifa hotel, Tabokoto guest house, Gambia hotels, secure suites Soma',
+    keywords: 'Kilifa Suites, Soma guest house, Lower River Region Gambia, luxury accommodation Soma, Tabokoto guest house, Gambia hotels, secure suites Soma',
     ogTitle: 'Kilifa Suites - Luxury Guest House in Soma, The Gambia',
     ogDescription: '12 Executive Suites across 2 private houses in Tabokoto, Soma. Solar power, high-grade security, and quiet comfort.',
     ogType: 'website',
@@ -28,10 +28,10 @@ export const SEO_CONFIG: Record<string, SEOMetadata> = {
     canonicalPath: '/suites',
   },
   about: {
-    title: 'About Us & Founder Alhaji Kilifa | Kilifa Suites',
-    description: 'Learn about Kilifa Suites in Tabokoto, Soma, founded under the vision of Alhaji Kilifa. Discover our commitment to luxury serviced suites, guest security, and Lower River Region community heritage.',
-    keywords: 'Alhaji Kilifa, Kilifa Suites, Soma guest house history, Tabokoto hospitality, Lower River Region owner',
-    ogTitle: 'About Kilifa Suites & Founder Alhaji Kilifa',
+    title: 'About Us | Kilifa Suites',
+    description: 'Learn about Kilifa Suites in Tabokoto, Soma. Discover our commitment to luxury serviced suites, guest security, and Lower River Region community heritage.',
+    keywords: 'Kilifa Suites, Soma guest house history, Tabokoto hospitality, Lower River Region suites',
+    ogTitle: 'About Kilifa Suites',
     ogDescription: 'Crafted with passion for authentic Gambian hospitality, safety, and modern comfort in Soma.',
     ogType: 'website',
     canonicalPath: '/about',
@@ -84,7 +84,7 @@ export const SEO_CONFIG: Record<string, SEOMetadata> = {
   contact: {
     title: 'Contact Us & Direct Inquiries | Kilifa Suites',
     description: 'Get in touch with Kilifa Suites in Soma. Phone: +220 700 1234, WhatsApp, Email: info@kilifasuites.com. Direct support for reservations.',
-    keywords: 'contact Kilifa Suites, Soma guest house phone, WhatsApp Kilifa Suites, Alhaji Kilifa contact',
+    keywords: 'contact Kilifa Suites, Soma guest house phone, WhatsApp Kilifa Suites, Soma reservations',
     ogTitle: 'Contact Kilifa Suites',
     ogDescription: 'Direct inquiries, phone, WhatsApp, and reservation assistance for Kilifa Suites.',
     ogType: 'website',

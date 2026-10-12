@@ -241,7 +241,7 @@ export const HomePage: React.FC = () => {
           <SectionHeader
             eyebrow="Hospitality Distinction"
             title="WELCOME TO KILIFA SUITES"
-            description="Established under the vision of Alhaji Kilifa, Kilifa Suites provides contemporary, high-standard accommodation tailored for every traveler visiting Soma and Lower River Region."
+            description="Kilifa Suites provides contemporary, high-standard executive accommodation tailored for every traveler visiting Soma and the Lower River Region."
           />
 
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-8 sm:p-12 space-y-8">

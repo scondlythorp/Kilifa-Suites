@@ -3,11 +3,10 @@ import { SEOHead } from '../components/seo/SEOHead';
 import { PageHeader } from '../components/common/PageHeader';
 import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
-import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
 import { GoogleMapEmbed } from '../components/common/GoogleMapEmbed';
 import { BUSINESS_CONFIG } from '../config/business';
-import { MapPin, Navigation, Car, Plane, Phone, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Phone, ExternalLink } from 'lucide-react';
 
 export const LocationPage: React.FC = () => {
   return (
@@ -83,43 +82,6 @@ export const LocationPage: React.FC = () => {
                 heightClass="min-h-[420px]"
                 defaultZoom={14}
               />
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* Transit Distances */}
-      <Section background="subtle">
-        <Container size="lg">
-          <SectionHeader
-            eyebrow="Regional Connectivity"
-            title="Travel Distances & Landmarks"
-            description="Estimated travel times from Kilifa Suites in Soma to major regional transit nodes."
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-xl bg-white border border-[var(--color-border)] shadow-sm space-y-2">
-              <span className="text-xs font-bold uppercase text-[var(--color-secondary)]">Landmark 01</span>
-              <h4 className="text-base font-bold text-[var(--color-text)]">Soma Commercial Market</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">5 mins drive (~2.2 km)</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white border border-[var(--color-border)] shadow-sm space-y-2">
-              <span className="text-xs font-bold uppercase text-[var(--color-secondary)]">Landmark 02</span>
-              <h4 className="text-base font-bold text-[var(--color-text)]">Senegambia Highway Link</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">Direct access road</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white border border-[var(--color-border)] shadow-sm space-y-2">
-              <span className="text-xs font-bold uppercase text-[var(--color-secondary)]">Landmark 03</span>
-              <h4 className="text-base font-bold text-[var(--color-text)]">Trans-Gambia Senegambia Bridge</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">12 mins drive (~9.5 km)</p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-white border border-[var(--color-border)] shadow-sm space-y-2">
-              <span className="text-xs font-bold uppercase text-[var(--color-secondary)]">Landmark 04</span>
-              <h4 className="text-base font-bold text-[var(--color-text)]">Banjul International Airport</h4>
-              <p className="text-xs text-[var(--color-text-muted)]">Transfers arranged via shuttle</p>
             </div>
           </div>
         </Container>

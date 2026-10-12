@@ -4,7 +4,7 @@ export const BUSINESS_CONFIG: BusinessConfig = {
   name: 'Kilifa Suites',
   tagline: 'Refined Luxury, Uncompromised Privacy & Gambian Warmth in Soma',
   category: 'Guest House / Hotel',
-  owner: 'Alhaji Kilifa',
+  owner: 'Kilifa Suites Management',
   location: {
     street: 'Main Highway Link, Tabokoto Area',
     neighborhood: 'Tabokoto',
@@ -351,21 +351,6 @@ export const MEDIA_GALLERY_DATA: Media[] = MEDIA_CATALOG;
 
 export const STAFF_DATA: Staff[] = [
   {
-    id: 'stf-founder',
-    name: 'Alhaji Kilifa',
-    title: 'Proprietor & Founder',
-    position: 'Proprietor',
-    bio: 'Proprietor and founder of Kilifa Suites, dedicated to providing world-class serviced suites, quiet privacy, and genuine Gambian warmth in Soma.',
-    avatar: '/media/images/kilifa-staff-00.jpeg',
-    role: 'owner',
-    department: 'Executive Leadership',
-    order: 1,
-    socialLinks: {
-      email: 'owner@kilifasuites.com',
-      whatsapp: '+2207001234',
-    },
-  },
-  {
     id: 'stf-manager',
     name: 'Fatou',
     title: 'General Estate Manager & Guest Relations',
@@ -374,7 +359,7 @@ export const STAFF_DATA: Staff[] = [
     avatar: '/media/images/kilifa-staff-01.jpeg',
     role: 'manager',
     department: 'Estate Operations',
-    order: 2,
+    order: 1,
     socialLinks: {
       email: 'manager@kilifasuites.com',
     },

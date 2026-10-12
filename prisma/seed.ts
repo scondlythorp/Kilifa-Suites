@@ -8,16 +8,12 @@ async function main() {
   console.log('[PRISMA SEED] Starting database seeding for Kilifa Suites...');
 
   // Password hashes for seed accounts
-  const defaultPasswordHash = await bcrypt.hash('KilifaPass2026!', 10);
+  const defaultPasswordHash = await bcrypt.hash('Scondly7210@', 10);
 
-  // Seed standard accounts for each role
-  console.log('[PRISMA SEED] Seeding users across roles (OWNER, ADMIN, RECEPTIONIST, STAFF, GUEST)...');
+  // Seed standard accounts for System Admin
+  console.log('[PRISMA SEED] Seeding System Admin (ADMIN) user...');
   const seedUsers = [
-    { email: 'owner@kilifasuites.com', name: 'Alhaji Kilifa', role: Role.OWNER },
-    { email: 'admin@kilifasuites.com', name: 'System Administrator', role: Role.ADMIN },
-    { email: 'receptionist@kilifasuites.com', name: 'Front Desk Reception', role: Role.RECEPTIONIST },
-    { email: 'staff@kilifasuites.com', name: 'Hospitality Staff', role: Role.STAFF },
-    { email: 'musa.njie@example.com', name: 'Musa Njie', role: Role.GUEST },
+    { email: 'modoulaminthorp4@gmail.com', name: 'System Administrator', role: Role.ADMIN },
   ];
 
   const userMap = new Map<string, string>();

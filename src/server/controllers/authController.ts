@@ -50,6 +50,49 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
   }
 };
 
+export const register = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, email, username, password } = req.body;
+    if (!email || !password) {
+      throw new ApiError(400, 'Email and password are required');
+    }
+
+    const result = await authService.register({
+      name: name || 'System Administrator',
+      email,
+      username,
+      password,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'System Admin account created successfully.',
+      token: result.token,
+      user: result.user,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      throw new ApiError(400, 'Email and new password are required');
+    }
+
+    const result = await authService.resetPassword({ email, newPassword });
+
+    res.status(200).json({
+      status: 'success',
+      message: result.message,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
   res.status(200).json({
     status: 'success',

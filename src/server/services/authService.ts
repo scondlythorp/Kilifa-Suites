@@ -19,47 +19,22 @@ export interface LoginResponse {
 }
 
 // Fallback accounts for development & testing when database is pending initialization
-const FALLBACK_USERS: Record<string, { id: string; email: string; name: string; role: Role; pass: string }> = {
-  'owner@kilifasuites.com': {
-    id: 'usr-owner-001',
-    email: 'owner@kilifasuites.com',
-    name: 'Alhaji Kilifa',
-    role: Role.OWNER,
-    pass: 'KilifaPass2026!',
-  },
-  'admin@kilifasuites.com': {
+// ONLY allow role System Admin (ADMIN)
+const FALLBACK_USERS: Record<string, { id: string; email: string; username: string; name: string; role: Role; pass: string }> = {
+  'modoulaminthorp4@gmail.com': {
     id: 'usr-admin-001',
-    email: 'admin@kilifasuites.com',
+    email: 'modoulaminthorp4@gmail.com',
+    username: 'kilifasuites',
     name: 'System Administrator',
     role: Role.ADMIN,
-    pass: 'KilifaPass2026!',
-  },
-  'receptionist@kilifasuites.com': {
-    id: 'usr-recept-001',
-    email: 'receptionist@kilifasuites.com',
-    name: 'Front Desk Reception',
-    role: Role.RECEPTIONIST,
-    pass: 'KilifaPass2026!',
-  },
-  'staff@kilifasuites.com': {
-    id: 'usr-staff-001',
-    email: 'staff@kilifasuites.com',
-    name: 'Hospitality Staff',
-    role: Role.STAFF,
-    pass: 'KilifaPass2026!',
-  },
-  'musa.njie@example.com': {
-    id: 'usr-guest-001',
-    email: 'musa.njie@example.com',
-    name: 'Musa Njie',
-    role: Role.GUEST,
-    pass: 'KilifaPass2026!',
+    pass: 'Scondly7210@',
   },
 };
 
 class AuthService {
   /**
-   * Authenticate user with email and password
+   * Authenticate user with email or username and password
+   * Only allows System Admin role
    */
   public async login(identifier: string, password: string): Promise<LoginResponse> {
     const raw = identifier.toLowerCase().trim();
@@ -75,6 +50,10 @@ class AuthService {
       });
 
       if (user && user.password) {
+        if (user.role !== Role.ADMIN) {
+          throw new ApiError(403, 'Access denied. Only System Admin accounts can access the management portal.');
+        }
+
         const passwordMatches = await bcrypt.compare(password, user.password);
         if (!passwordMatches) {
           throw new ApiError(401, 'Invalid credentials. Please verify your login details.');
@@ -115,16 +94,19 @@ class AuthService {
       throw new ApiError(401, 'Invalid credentials. Account not found.');
     }
 
-    // Flexible fallback account search by email, username prefix, full name, or role name
+    // Flexible fallback account search by email, username, or role name for System Admin
     const fallbackUser = Object.values(FALLBACK_USERS).find((acc) => {
       const emailMatch = acc.email.toLowerCase() === raw;
-      const usernameMatch = acc.email.split('@')[0].toLowerCase() === raw;
-      const nameMatch = acc.name.toLowerCase().includes(raw) || raw.includes(acc.name.toLowerCase());
-      const roleMatch = acc.role.toLowerCase() === raw;
-      return emailMatch || usernameMatch || nameMatch || roleMatch;
+      const usernameMatch = acc.username.toLowerCase() === raw;
+      const adminAliasMatch = raw === 'admin' || raw === 'system admin';
+      return emailMatch || usernameMatch || adminAliasMatch;
     });
 
     if (fallbackUser) {
+      if (fallbackUser.role !== Role.ADMIN) {
+        throw new ApiError(403, 'Access denied. Only System Admin accounts can access the management portal.');
+      }
+
       // Validate password strictly
       const isPassValid = password === fallbackUser.pass;
 
@@ -155,6 +137,161 @@ class AuthService {
     }
 
     throw new ApiError(401, 'Invalid credentials. Account not found.');
+  }
+
+  /**
+   * Create / Register a new System Admin account
+   */
+  public async register(data: { name: string; email: string; username?: string; password: string }): Promise<LoginResponse> {
+    const email = data.email.toLowerCase().trim();
+    const username = (data.username || email.split('@')[0]).toLowerCase().trim();
+    const name = data.name.trim() || 'System Administrator';
+    const password = data.password.trim();
+
+    if (!email || !password) {
+      throw new ApiError(400, 'Email and password are required.');
+    }
+
+    if (password.length < 6) {
+      throw new ApiError(400, 'Password must be at least 6 characters long.');
+    }
+
+    // Hash password with bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = `usr-admin-${Date.now()}`;
+
+    try {
+      const existing = await prisma.user.findFirst({
+        where: { email },
+      });
+
+      if (existing) {
+        throw new ApiError(409, 'An account with this email address already exists.');
+      }
+
+      const created = await prisma.user.create({
+        data: {
+          id: userId,
+          email,
+          name,
+          password: hashedPassword,
+          role: Role.ADMIN,
+        },
+      });
+
+      const payload = {
+        id: created.id,
+        email: created.email,
+        name: created.name,
+        role: created.role,
+      };
+
+      const token = jwt.sign(payload, getJwtSecret(), {
+        expiresIn: getJwtExpiresIn() as any,
+      });
+
+      return {
+        token,
+        user: {
+          id: created.id,
+          email: created.email,
+          name: created.name,
+          role: created.role,
+          createdAt: created.createdAt.toISOString(),
+        },
+      };
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      console.warn('[AUTH SERVICE] Prisma create failed, saving to memory fallback:', (err as Error).message);
+    }
+
+    // Save in memory fallback
+    FALLBACK_USERS[email] = {
+      id: userId,
+      email,
+      username,
+      name,
+      role: Role.ADMIN,
+      pass: password,
+    };
+
+    const payload = {
+      id: userId,
+      email,
+      name,
+      role: Role.ADMIN,
+    };
+
+    const token = jwt.sign(payload, getJwtSecret(), {
+      expiresIn: getJwtExpiresIn() as any,
+    });
+
+    return {
+      token,
+      user: {
+        id: userId,
+        email,
+        name,
+        role: Role.ADMIN,
+      },
+    };
+  }
+
+  /**
+   * Reset / Forgot password for a System Admin account
+   */
+  public async resetPassword(data: { email: string; newPassword: string }): Promise<{ message: string }> {
+    const raw = data.email.toLowerCase().trim();
+    const newPassword = data.newPassword.trim();
+
+    if (!raw || !newPassword) {
+      throw new ApiError(400, 'Email address and new password are required.');
+    }
+
+    if (newPassword.length < 6) {
+      throw new ApiError(400, 'New password must be at least 6 characters long.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: { equals: raw, mode: 'insensitive' } },
+            { name: { contains: raw, mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      if (user) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashedPassword },
+        });
+
+        return { message: 'Password has been successfully updated. You may now log in.' };
+      }
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      console.warn('[AUTH SERVICE] Database password reset failed, checking fallback users:', (err as Error).message);
+    }
+
+    // Update in memory fallback
+    const fallbackUser = Object.values(FALLBACK_USERS).find((acc) => {
+      return (
+        acc.email.toLowerCase() === raw ||
+        acc.username.toLowerCase() === raw ||
+        (raw === 'kilifasuites' && acc.username === 'kilifasuites')
+      );
+    });
+
+    if (fallbackUser) {
+      fallbackUser.pass = newPassword;
+      return { message: 'Password has been successfully updated. You may now log in.' };
+    }
+
+    throw new ApiError(404, 'No account found matching this email or username.');
   }
 
   /**

@@ -153,10 +153,20 @@ function createFallbackPaymentRecord(data: any) {
 // REST API Helper methods
 export const api = {
   auth: {
-    login: (credentials: { email: string; password: string }) =>
+    login: (credentials: { email?: string; username?: string; identifier?: string; password: string }) =>
       apiRequest('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
+      }),
+    register: (data: { name: string; email: string; username?: string; password: string }) =>
+      apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    forgotPassword: (data: { email: string; newPassword: string }) =>
+      apiRequest('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
     me: () => apiRequest('/auth/me'),
     logout: () =>

@@ -24,23 +24,12 @@ import {
 } from 'lucide-react';
 
 export const AboutPage: React.FC = () => {
-  const founder = STAFF_DATA.find((s) => s.role === 'owner') || {
-    id: 'stf-founder',
-    name: 'Alhaji Kilifa',
-    title: 'Founder & Proprietor',
-    bio: 'Founder and proprietor of Kilifa Suites.',
-    avatar: '/media/images/kilifa-staff-00.jpeg',
-    role: 'owner' as const,
-  };
-
-  const otherStaff = STAFF_DATA.filter((s) => s.role !== 'owner');
-
   return (
     <>
       <SEOHead configKey="about" />
 
       <PageHeader
-        title="About Kilifa Suites & Founder Alhaji Kilifa"
+        title="About Kilifa Suites"
         subtitle="A contemporary serviced suites establishment in Tabokoto, Soma, Lower River Region, The Gambia."
         breadcrumbs={[{ label: 'About Us' }]}
         bgTag="Our Heritage & Vision"
@@ -127,61 +116,6 @@ export const AboutPage: React.FC = () => {
                     <span className="text-[10px] text-white/70">House 1 & House 2 Residences</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* FOUNDER SECTION */}
-      <Section background="surface">
-        <Container size="lg">
-          <SectionHeader
-            eyebrow="Leadership & Vision"
-            title="FOUNDER"
-            description="Established under the leadership of Alhaji Kilifa."
-          />
-
-          <div className="p-8 sm:p-12 rounded-3xl bg-[#111111] border border-white/10 shadow-xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            <div className="md:col-span-5">
-              <div className="p-2 rounded-2xl bg-[#161616] border border-white/10 overflow-hidden group">
-                <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-black">
-                  <img
-                    src="/media/images/kilifa-staff-00.jpeg"
-                    alt="Alhaji Kilifa - Founder & Proprietor"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3 text-xs text-white">
-                    <span className="font-serif italic text-sm text-[#C5A059] block">Alhaji Kilifa</span>
-                    <span className="text-[10px] text-white/70">Founder & Proprietor</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-7 space-y-6">
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#C5A059] font-semibold block mb-1">
-                  Founder & Proprietor
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-serif italic text-white">
-                  Alhaji Kilifa
-                </h3>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-[#161616] border border-white/10 space-y-3">
-                <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold block">
-                  Founder Message
-                </span>
-                <p className="text-sm font-serif italic text-white/90 leading-relaxed">
-                  "Kilifa Suites was born out of a desire to create an uncompromising sanctuary in Soma—a place where travelers, families, and professionals can enjoy genuine Gambian hospitality, modern climate comfort, and peaceful privacy backed by 24/7 solar reliability."
-                </p>
-              </div>
-
-              <div className="pt-2 flex items-center gap-2 text-xs text-white/50">
-                <ShieldCheck className="w-4 h-4 text-[#C5A059]" />
-                <span>Proprietor & Visionary • Kilifa Suites, Soma</span>
               </div>
             </div>
           </div>

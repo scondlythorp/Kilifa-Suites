@@ -12,7 +12,9 @@ interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (identifier: string, pass: string) => Promise<void>;
+  register: (data: { name: string; email: string; username?: string; password: string }) => Promise<void>;
+  forgotPassword: (data: { email: string; newPassword: string }) => Promise<string>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -51,10 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, pass: string) => {
+  const login = async (identifier: string, pass: string) => {
     setIsLoading(true);
     try {
-      const res = await api.auth.login({ email, password: pass });
+      const res = await api.auth.login({ identifier, password: pass });
       if (res?.token && res?.user) {
         setStoredToken(res.token);
         setTokenState(res.token);
@@ -63,6 +65,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const register = async (data: { name: string; email: string; username?: string; password: string }) => {
+    setIsLoading(true);
+    try {
+      const res = await api.auth.register(data);
+      if (res?.token && res?.user) {
+        setStoredToken(res.token);
+        setTokenState(res.token);
+        setUser(res.user);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const forgotPassword = async (data: { email: string; newPassword: string }): Promise<string> => {
+    const res = await api.auth.forgotPassword(data);
+    return res.message || 'Password has been updated.';
   };
 
   const logout = async () => {
@@ -84,6 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isLoading,
         login,
+        register,
+        forgotPassword,
         logout,
         isAuthenticated: Boolean(user && token),
       }}

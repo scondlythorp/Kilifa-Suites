@@ -163,7 +163,7 @@ console.log('✅ Backend access control routes protected with JWT authentication
 // ==========================================
 console.log('\n--- 5. Testing Business & Content Information ---');
 
-assert.equal(BUSINESS_CONFIG.owner, 'Alhaji Kilifa', 'Proprietor must be Alhaji Kilifa');
+assert.equal(BUSINESS_CONFIG.owner, 'Kilifa Suites Management', 'Proprietor must be Kilifa Suites Management');
 assert.equal(BUSINESS_CONFIG.location.neighborhood, 'Tabokoto');
 assert.equal(BUSINESS_CONFIG.location.city, 'Soma');
 assert.equal(BUSINESS_CONFIG.location.region, 'Lower River Region');
