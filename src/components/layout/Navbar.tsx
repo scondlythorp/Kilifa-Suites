@@ -157,11 +157,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             Book Stay
           </Button>
 
-          {/* Menu Toggle Button (Visible on mobile & desktop) */}
+          {/* Menu Toggle Button (Visible only on mobile/tablet) */}
           <button
             type="button"
             onClick={onMobileMenuToggle}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl border border-white/10 hover:border-[#C5A059] text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-[#C5A059]"
+            className="lg:hidden p-2 sm:px-3 sm:py-2 rounded-xl border border-white/10 hover:border-[#C5A059] text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-[#C5A059]"
             aria-label={isMobileMenuOpen ? 'Close Menu' : 'Open Menu'}
           >
             {isMobileMenuOpen ? (

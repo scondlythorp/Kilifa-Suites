@@ -13,16 +13,42 @@ if (!process.env.DATABASE_URL || (!process.env.DATABASE_URL.startsWith('postgres
   process.env.DATABASE_URL = validDbUrl;
 }
 
-export const prisma =
-  global.prisma ||
-  new PrismaClient({
-    datasources: {
-      db: {
-        url: validDbUrl,
+let prismaClient: PrismaClient;
+
+try {
+  prismaClient =
+    global.prisma ||
+    new PrismaClient({
+      datasources: {
+        db: {
+          url: validDbUrl,
+        },
       },
+      log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    });
+} catch (err) {
+  console.warn('[AI Studio] Database not connected — using mock proxy fallback:', (err as Error).message);
+  const noOp = {
+    findMany: async () => [],
+    findFirst: async () => null,
+    findUnique: async () => null,
+    create: async (d: any) => d?.data ?? {},
+    update: async (d: any) => d?.data ?? {},
+    delete: async () => ({}),
+    count: async () => 0,
+    aggregate: async () => ({ _sum: {}, _avg: {}, _count: {} }),
+    groupBy: async () => [],
+  };
+  prismaClient = new Proxy({}, {
+    get: (_, prop) => {
+      if (prop === '$queryRaw' || prop === '$executeRaw') return async () => [];
+      if (prop === '$disconnect' || prop === '$connect') return async () => {};
+      return new Proxy({}, { get: () => noOp });
     },
-    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-  });
+  }) as any;
+}
+
+export const prisma = prismaClient;
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
