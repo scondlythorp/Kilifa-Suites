@@ -63,8 +63,18 @@ async function startServer() {
           return callback(null, true);
         }
 
-        // Allow Vercel preview/production deployments (*.vercel.app)
-        if (origin.endsWith('.vercel.app')) {
+        // Allow Cloud Run, Google preview domains, and Vercel deployments
+        if (
+          origin.endsWith('.run.app') ||
+          origin.endsWith('.google.com') ||
+          origin.endsWith('.googleusercontent.com') ||
+          origin.endsWith('.vercel.app')
+        ) {
+          return callback(null, true);
+        }
+
+        // In non-production environments, allow any origin to ensure preview works seamlessly
+        if (process.env.NODE_ENV !== 'production') {
           return callback(null, true);
         }
 

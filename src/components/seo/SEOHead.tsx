@@ -91,6 +91,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({ configKey = 'home', customSEO 
       ],
     };
     schemaScript.textContent = JSON.stringify(structuredData);
+  }, [seo]);
 
   return null;
 };
