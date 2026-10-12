@@ -157,14 +157,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             Book Stay
           </Button>
 
-          {/* Mobile Menu Toggle Button */}
+          {/* Menu Toggle Button (Visible on mobile & desktop) */}
           <button
             type="button"
             onClick={onMobileMenuToggle}
-            className="lg:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 sm:px-3 sm:py-2 rounded-xl border border-white/10 hover:border-[#C5A059] text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-[#C5A059]"
             aria-label={isMobileMenuOpen ? 'Close Menu' : 'Open Menu'}
           >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5 text-[#C5A059]" />
+            ) : (
+              <Menu className="w-5 h-5 text-[#C5A059]" />
+            )}
+            <span className="hidden sm:inline text-xs font-semibold uppercase tracking-widest text-white/90">
+              Menu
+            </span>
           </button>
         </div>
       </Container>

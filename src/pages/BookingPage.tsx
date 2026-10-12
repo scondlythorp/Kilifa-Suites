@@ -48,6 +48,15 @@ export const BookingPage: React.FC = () => {
     return date.toISOString().split('T')[0];
   };
 
+  const parseUTCDate = (dateStr: string): number => {
+    if (!dateStr) return NaN;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return NaN;
+    return Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  };
+
+  const todayStr = useMemo(() => formatDate(new Date()), []);
+
   const tomorrow = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -87,14 +96,13 @@ export const BookingPage: React.FC = () => {
     return SUITES_DATA.find((s) => s.id === selectedSuiteId) || SUITES_DATA[0];
   }, [selectedSuiteId]);
 
-  // Calculate night count safely
+  // Calculate night count safely with UTC midnight parsing
   const nightCount = useMemo(() => {
     if (!checkIn || !checkOut) return 1;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const start = parseUTCDate(checkIn);
+    const end = parseUTCDate(checkOut);
+    if (isNaN(start) || isNaN(end)) return 1;
+    const diffDays = Math.round((end - start) / 86400000);
     return diffDays > 0 ? diffDays : 1;
   }, [checkIn, checkOut]);
 
@@ -129,24 +137,27 @@ export const BookingPage: React.FC = () => {
     // 4. Check-in & Check-out dates
     if (!checkIn) {
       newErrors.checkIn = 'Check-in date is required';
+    } else if (checkIn < todayStr) {
+      newErrors.checkIn = 'Check-in date cannot be in the past';
     }
+
     if (!checkOut) {
       newErrors.checkOut = 'Check-out date is required';
     }
 
     if (checkIn && checkOut) {
-      const startDate = new Date(checkIn);
-      const endDate = new Date(checkOut);
+      const start = parseUTCDate(checkIn);
+      const end = parseUTCDate(checkOut);
 
-      if (isNaN(startDate.getTime())) {
+      if (isNaN(start)) {
         newErrors.checkIn = 'Invalid check-in date';
       }
-      if (isNaN(endDate.getTime())) {
+      if (isNaN(end)) {
         newErrors.checkOut = 'Invalid check-out date';
       }
 
-      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        if (endDate <= startDate) {
+      if (!isNaN(start) && !isNaN(end)) {
+        if (end <= start) {
           newErrors.checkOut = 'Check-out date must be after check-in date';
         }
       }
@@ -396,11 +407,19 @@ export const BookingPage: React.FC = () => {
                         </label>
                         <input
                           type="date"
+                          min={todayStr}
                           value={checkIn}
                           onChange={(e) => {
-                            setCheckIn(e.target.value);
+                            const newCheckIn = e.target.value;
+                            setCheckIn(newCheckIn);
                             if (errors.checkIn) {
                               setErrors((prev) => ({ ...prev, checkIn: undefined }));
+                            }
+                            // Auto-adjust checkout if invalid
+                            if (newCheckIn && checkOut && checkOut <= newCheckIn) {
+                              const nextDay = new Date(parseUTCDate(newCheckIn) + 86400000);
+                              setCheckOut(formatDate(nextDay));
+                              setErrors((prev) => ({ ...prev, checkOut: undefined }));
                             }
                           }}
                           className={`w-full px-4 py-2.5 rounded-xl bg-black text-sm text-white border transition-colors focus:outline-none focus:border-[#C5A059] ${
@@ -420,6 +439,7 @@ export const BookingPage: React.FC = () => {
                         </label>
                         <input
                           type="date"
+                          min={checkIn ? formatDate(new Date(parseUTCDate(checkIn) + 86400000)) : todayStr}
                           value={checkOut}
                           onChange={(e) => {
                             setCheckOut(e.target.value);
@@ -488,7 +508,7 @@ export const BookingPage: React.FC = () => {
                               setErrors((prev) => ({ ...prev, fullName: undefined }));
                             }
                           }}
-                          placeholder="e.g. Musa Njai"
+                          placeholder="e.g. Lamin Touray"
                           className={`w-full px-4 py-2.5 rounded-xl bg-black text-sm text-white border transition-colors focus:outline-none focus:border-[#C5A059] ${
                             errors.fullName ? 'border-red-500' : 'border-white/20'
                           }`}

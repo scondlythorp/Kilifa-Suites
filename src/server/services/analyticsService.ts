@@ -6,8 +6,8 @@ export interface AnalyticsSummary {
     occupiedSuites: number;
     availableSuites: number;
     totalSuites: number;
-    adr: number; // Average Daily Rate ($)
-    revpar: number; // Revenue Per Available Room ($)
+    adr: number; // Average Daily Rate (GMD)
+    revpar: number; // Revenue Per Available Room (GMD)
   };
   revenue: {
     totalRevenue: number;

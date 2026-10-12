@@ -114,10 +114,13 @@ class BookingService {
       throw new ApiError(400, 'Suite identifier (suiteId) is required.');
     }
 
+    const [sy, sm, sd] = data.checkIn.split('-').map(Number);
+    const [ey, em, ed] = data.checkOut.split('-').map(Number);
+    const startUtc = Date.UTC(sy, sm - 1, sd);
+    const endUtc = Date.UTC(ey, em - 1, ed);
+    const nights = Math.max(1, Math.round((endUtc - startUtc) / 86400000));
     const start = new Date(data.checkIn);
     const end = new Date(data.checkOut);
-    const diffTime = end.getTime() - start.getTime();
-    const nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
     // Static fallback lookup if database is unavailable or initializing
     const staticSuite = SUITES_DATA.find(
@@ -307,6 +310,13 @@ class BookingService {
     // Fallback store handling (Development / Prototype Mode Only)
     if (!staticSuite) {
       throw new ApiError(404, `Suite '${targetSuiteId}' was not found in catalog.`);
+    }
+
+    if (data.guestsCount > staticSuite.maxOccupancy) {
+      throw new ApiError(
+        400,
+        `Guest count (${data.guestsCount}) exceeds the maximum occupancy of ${staticSuite.maxOccupancy} for ${staticSuite.name}.`
+      );
     }
 
     // Check overlap in fallback store

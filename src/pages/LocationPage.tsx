@@ -35,22 +35,22 @@ export const LocationPage: React.FC = () => {
                 Kilifa Suites is located in Tabokoto, Soma, in the Lower River Region of The Gambia. Soma is a major transit crossroads linking north-south and east-west trade routes, making our location ideal for regional travel.
               </p>
 
-              <div className="p-6 rounded-2xl bg-white border border-[var(--color-border)] shadow-sm space-y-4">
+              <div className="p-6 rounded-2xl bg-[#111111] border border-white/10 shadow-xl space-y-4">
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-[var(--color-primary)] shrink-0 mt-1" />
+                  <MapPin className="w-5 h-5 text-[#C5A059] shrink-0 mt-1" />
                   <div>
-                    <h4 className="text-sm font-bold text-[var(--color-text)]">Full Postal Address</h4>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                    <h4 className="text-sm font-bold text-white">Full Postal Address</h4>
+                    <p className="text-xs text-white/70 mt-0.5">
                       {BUSINESS_CONFIG.location.fullAddress}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 pt-3 border-t border-[var(--color-border)]">
-                  <Navigation className="w-5 h-5 text-[var(--color-secondary)] shrink-0 mt-1" />
+                <div className="flex items-start gap-3 pt-3 border-t border-white/10">
+                  <Navigation className="w-5 h-5 text-[#C5A059] shrink-0 mt-1" />
                   <div>
-                    <h4 className="text-sm font-bold text-[var(--color-text)]">GPS Coordinates</h4>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5 font-mono">
+                    <h4 className="text-sm font-bold text-white">GPS Coordinates</h4>
+                    <p className="text-xs text-white/70 mt-0.5 font-mono">
                       Lat: {BUSINESS_CONFIG.location.coordinates.lat}° N, Lng: {BUSINESS_CONFIG.location.coordinates.lng}° W
                     </p>
                   </div>
@@ -100,7 +100,7 @@ export const LocationPage: React.FC = () => {
                 </div>
 
                 <div className="relative z-10 pt-4 border-t border-emerald-900/60 flex items-center justify-between text-xs text-emerald-300/80 font-mono">
-                  <span>Owner: Musa Njai</span>
+                  <span>Owner: Alhaji Kilifa</span>
                   <span>12 Suites (Houses 1 & 2)</span>
                 </div>
               </div>

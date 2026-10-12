@@ -84,7 +84,7 @@ export const SEO_CONFIG: Record<string, SEOMetadata> = {
   contact: {
     title: 'Contact Us & Direct Inquiries | Kilifa Suites',
     description: 'Get in touch with Kilifa Suites in Soma. Phone: +220 700 1234, WhatsApp, Email: info@kilifasuites.com. Direct support for reservations.',
-    keywords: 'contact Kilifa Suites, Soma guest house phone, WhatsApp Kilifa Suites, Musa Njai contact',
+    keywords: 'contact Kilifa Suites, Soma guest house phone, WhatsApp Kilifa Suites, Alhaji Kilifa contact',
     ogTitle: 'Contact Kilifa Suites',
     ogDescription: 'Direct inquiries, phone, WhatsApp, and reservation assistance for Kilifa Suites.',
     ogType: 'website',

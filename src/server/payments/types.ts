@@ -22,7 +22,7 @@ export interface InitiatePaymentRequest {
   bookingReference: string;
   amount: number;
   paidAmount?: number;
-  currency?: string; // default USD or GMD
+  currency?: string; // default GMD
   provider: PaymentProvider;
   guestName: string;
   guestEmail: string;

@@ -38,7 +38,7 @@ export const SuitesTab: React.FC<SuitesTabProps> = ({
     name: '',
     houseNumber: 1,
     floor: 'Ground Floor',
-    pricePerNight: 150,
+    pricePerNight: 2500,
     maxOccupancy: 2,
     bedrooms: 1,
     bathrooms: 1,

@@ -44,7 +44,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
     try {
       const paymentId = selectedBooking.payment?.id || selectedBooking.id;
       await api.payments.recordPartial(paymentId, Number(partialAmount), 'Partial deposit collected at desk');
-      setActionSuccessMsg(`Partial payment of $${partialAmount} recorded successfully.`);
+      setActionSuccessMsg(`Partial payment of D ${Number(partialAmount).toLocaleString()} recorded successfully.`);
       setPartialAmount('');
       if (onRefresh) onRefresh();
     } catch (err: any) {

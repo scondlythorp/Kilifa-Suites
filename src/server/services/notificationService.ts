@@ -116,7 +116,7 @@ export class NotificationService {
         bookingReference: payment.bookingReference,
         guestName: payment.fullName,
         amount: payment.amount,
-        currency: payment.currency || '$',
+        currency: payment.currency || 'GMD',
         paymentMethod: payment.paymentMethod || 'Wave / Mobile Money',
       },
       channels

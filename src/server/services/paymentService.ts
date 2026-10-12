@@ -92,7 +92,7 @@ export class PaymentService {
             fullName: booking.fullName,
             bookingReference: booking.bookingReference,
             amount: initialPaid,
-            currency: req.currency || '$',
+            currency: req.currency || 'GMD',
             paymentMethod: req.provider,
           }).catch((err) => console.warn('[PAYMENT NOTIFICATION ERROR]', err));
         }

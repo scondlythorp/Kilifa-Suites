@@ -93,9 +93,9 @@ export const AnalyticsTab: React.FC = () => {
 
     // 4. Payment Methods
     csvContent += '--- PAYMENT METHODS ---\n';
-    csvContent += 'Payment Method,Transaction Count,Total Amount ($),Share (%)\n';
+    csvContent += 'Payment Method,Transaction Count,Total Amount (GMD),Share (%)\n';
     report.paymentMethods.forEach((p: any) => {
-      csvContent += `"${p.label}",${p.count},$${p.totalAmount},${p.percentage}%\n`;
+      csvContent += `"${p.label}",${p.count},D ${p.totalAmount},${p.percentage}%\n`;
     });
 
     const encodedUri = encodeURI(csvContent);

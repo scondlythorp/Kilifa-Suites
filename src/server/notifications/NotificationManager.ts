@@ -141,7 +141,7 @@ export class NotificationManager {
         channel: 'SMS',
         providerName: 'KILIFA_SMS_PROVIDER (Simulator)',
         recipient: '+2207001020',
-        bodyPreview: 'KILIFA SUITES: Received $700.00 for booking KS-910234. Thank you!',
+        bodyPreview: 'KILIFA SUITES: Received D 5,000 for booking KS-910234. Thank you!',
         success: true,
         messageId: 'sms-sim-msg-demo-103',
         status: 'SIMULATED',
