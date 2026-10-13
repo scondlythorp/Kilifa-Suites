@@ -218,112 +218,13 @@ export const BookingPage: React.FC = () => {
       setCreatedBooking(bookingData);
       setSubmitted(true);
       setSubmitError(null);
-
-      // Save locally for guest and staff reference
-      try {
-        const existingRaw = localStorage.getItem('kilifa_guest_reservations');
-        const existing = existingRaw ? JSON.parse(existingRaw) : [];
-        localStorage.setItem('kilifa_guest_reservations', JSON.stringify([bookingData, ...existing]));
-      } catch {}
-
-      // 2. Dispatch Instant Reservation Notification via FormSubmit to modoulaminthorp4@gmail.com
-      fetch('https://formsubmit.co/ajax/modoulaminthorp4@gmail.com', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          'Booking Reference': bookingData.bookingReference,
-          'Guest Name': fullName.trim(),
-          'Email Address': email.trim(),
-          'Phone Number': phone.trim(),
-          'Suite Selection': `${selectedSuite.name} (House ${selectedSuite.houseNumber}, Floor ${selectedSuite.floor || 'Ground'})`,
-          'Check-In Date': checkIn,
-          'Check-Out Date': checkOut,
-          'Total Nights': `${nightCount} night(s)`,
-          'Guest Count': `${guestsCount} guest(s)`,
-          'Estimated Total': formatGMD(totalPrice),
-          'Special Requests': specialRequests.trim() || 'None',
-          _subject: `🛎️ Kilifa Suites Reservation: ${selectedSuite.name} - ${fullName.trim()} (${checkIn} to ${checkOut})`,
-          _template: 'table',
-          _captcha: 'false',
-        }),
-      }).catch((err) => console.warn('FormSubmit notification note:', err));
     } catch (err: any) {
       console.error('[BOOKING ERROR]', err);
-
-      // Handle 405 or environment proxy failure by producing a resilient confirmation
-      if (
-        err?.message?.includes('405') ||
-        err?.message?.includes('Method Not Allowed') ||
-        err?.message?.includes('proxy check') ||
-        err?.message?.includes('Failed to fetch')
-      ) {
-        console.warn('[BOOKING] Recovering from environment 405 proxy response');
-        const fallbackRef = `KS-${Math.floor(100000 + Math.random() * 900000)}`;
-        const fallbackBooking = {
-          id: `bkg-${Date.now()}`,
-          bookingReference: fallbackRef,
-          fullName: fullName.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          checkIn,
-          checkOut,
-          guestsCount,
-          preferredSuite: selectedSuite.id,
-          suiteName: selectedSuite.name,
-          pricePerNight: selectedSuite.pricePerNight,
-          totalNights: nightCount,
-          totalEstimatedPrice: totalPrice,
-          specialRequests: specialRequests.trim(),
-          status: 'PENDING',
-          createdAt: new Date().toISOString(),
-        };
-
-        setCreatedBooking(fallbackBooking);
-
-        // Save locally for guest and staff reference
-        try {
-          const existingRaw = localStorage.getItem('kilifa_guest_reservations');
-          const existing = existingRaw ? JSON.parse(existingRaw) : [];
-          localStorage.setItem('kilifa_guest_reservations', JSON.stringify([fallbackBooking, ...existing]));
-        } catch {}
-
-        // Send FormSubmit email
-        fetch('https://formsubmit.co/ajax/modoulaminthorp4@gmail.com', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            'Booking Reference': fallbackRef,
-            'Guest Name': fullName.trim(),
-            'Email Address': email.trim(),
-            'Phone Number': phone.trim(),
-            'Suite Selection': `${selectedSuite.name} (House ${selectedSuite.houseNumber})`,
-            'Check-In Date': checkIn,
-            'Check-Out Date': checkOut,
-            'Total Nights': `${nightCount} night(s)`,
-            'Guest Count': `${guestsCount} guest(s)`,
-            'Estimated Total': formatGMD(totalPrice),
-            'Special Requests': specialRequests.trim() || 'None',
-            _subject: `🛎️ Kilifa Suites Reservation: ${selectedSuite.name} - ${fullName.trim()} (${checkIn} to ${checkOut})`,
-            _template: 'table',
-            _captcha: 'false',
-          }),
-        }).catch(() => {});
-
-        setSubmitted(true);
-        setSubmitError(null);
-      } else {
-        setSubmitted(false);
-        setSubmitError(
-          err?.message ||
-            'Your reservation request could not be processed. Please check your details or try again.'
-        );
-      }
+      setSubmitted(false);
+      setSubmitError(
+        err?.message ||
+          'Your reservation request could not be processed. Please check your details or select alternative dates.'
+      );
     } finally {
       setIsSubmitting(false);
     }

@@ -64,19 +64,17 @@ export function getJwtExpiresIn(): string | number {
  * In development: Allowed only for resilient development prototyping when explicitly enabled.
  */
 export function isMemoryFallbackAllowed(): boolean {
-  // In AI Studio and sandboxed environments where PostgreSQL is not locally hosted,
-  // allow in-memory fallback so the app operates smoothly without throwing 503 errors.
   if (process.env.ALLOW_MEMORY_FALLBACK === 'true') {
-    return true;
-  }
-  const rawDb = process.env.DATABASE_URL?.trim() || '';
-  const isLocalDb = !rawDb || rawDb.includes('localhost') || rawDb.includes('127.0.0.1');
-  if (isLocalDb) {
     return true;
   }
   if (process.env.ALLOW_MEMORY_FALLBACK === 'false') {
     return false;
   }
+  // In production, strictly disallow in-memory fallback to guarantee database persistence
+  if (isProduction) {
+    return false;
+  }
+  // In development/test environments, allow fallback for local agility
   return true;
 }
 

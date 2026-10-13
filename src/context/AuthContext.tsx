@@ -13,8 +13,10 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (identifier: string, pass: string) => Promise<void>;
-  register: (data: { name: string; email: string; username?: string; password: string }) => Promise<void>;
-  forgotPassword: (data: { email: string; newPassword: string }) => Promise<string>;
+  register: (data: { name: string; email: string; username?: string; password: string; role?: string }) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<string>;
+  resetPassword: (token: string, newPassword: string) => Promise<string>;
+  forgotPassword: (data: { email: string; newPassword?: string }) => Promise<string>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -38,30 +40,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await api.auth.me();
         if (res?.data) {
           setUser(res.data);
-          try {
-            localStorage.setItem('kilifa_active_user', JSON.stringify(res.data));
-          } catch {}
           setTokenState(stored);
         }
       } catch (err) {
-        console.warn('[AUTH CONTEXT] Token verification note:', (err as Error).message);
-        // If environmental proxy intercepted or offline, check if active user is stored locally
-        const rawActive = localStorage.getItem('kilifa_active_user');
-        if (rawActive) {
-          try {
-            const cachedUser = JSON.parse(rawActive);
-            if (cachedUser?.id && cachedUser?.email) {
-              setUser(cachedUser);
-              setTokenState(stored);
-              setIsLoading(false);
-              return;
-            }
-          } catch {}
-        }
+        console.warn('[AUTH CONTEXT] Token verification error:', (err as Error).message);
         removeStoredToken();
-        try {
-          localStorage.removeItem('kilifa_active_user');
-        } catch {}
         setUser(null);
         setTokenState(null);
       } finally {
@@ -78,9 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.auth.login({ identifier, password: pass });
       if (res?.token && res?.user) {
         setStoredToken(res.token);
-        try {
-          localStorage.setItem('kilifa_active_user', JSON.stringify(res.user));
-        } catch {}
         setTokenState(res.token);
         setUser(res.user);
       }
@@ -89,15 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (data: { name: string; email: string; username?: string; password: string }) => {
+  const register = async (data: { name: string; email: string; username?: string; password: string; role?: string }) => {
     setIsLoading(true);
     try {
       const res = await api.auth.register(data);
       if (res?.token && res?.user) {
         setStoredToken(res.token);
-        try {
-          localStorage.setItem('kilifa_active_user', JSON.stringify(res.user));
-        } catch {}
         setTokenState(res.token);
         setUser(res.user);
       }
@@ -106,9 +83,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const forgotPassword = async (data: { email: string; newPassword: string }): Promise<string> => {
-    const res = await api.auth.forgotPassword(data);
+  const requestPasswordReset = async (email: string): Promise<string> => {
+    const res = await api.auth.requestPasswordReset(email);
+    return res.message || 'If an account exists, password reset instructions have been sent.';
+  };
+
+  const resetPassword = async (tokenStr: string, newPassword: string): Promise<string> => {
+    const res = await api.auth.resetPassword(tokenStr, newPassword);
     return res.message || 'Password has been updated.';
+  };
+
+  const forgotPassword = async (data: { email: string; newPassword?: string }): Promise<string> => {
+    if (data.newPassword) {
+      // Direct reset request with email
+      return requestPasswordReset(data.email);
+    }
+    return requestPasswordReset(data.email);
   };
 
   const logout = async () => {
@@ -118,9 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // ignore
     } finally {
       removeStoredToken();
-      try {
-        localStorage.removeItem('kilifa_active_user');
-      } catch {}
       setTokenState(null);
       setUser(null);
     }
@@ -134,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
+        requestPasswordReset,
+        resetPassword,
         forgotPassword,
         logout,
         isAuthenticated: Boolean(user && token),

@@ -1,4 +1,4 @@
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { ApiError } from '../middleware/errorHandler';
 import { paymentManager } from '../payments/PaymentManager';
 import {
@@ -19,13 +19,15 @@ export class PaymentService {
   public async initiatePayment(req: InitiatePaymentRequest): Promise<InitiatePaymentResponse> {
     // 1. Verify Booking exists
     let booking: any = null;
-    try {
-      booking = await prisma.booking.findFirst({
-        where: { OR: [{ id: req.bookingId }, { bookingReference: req.bookingReference }] },
-        include: { payment: true, suite: true },
-      });
-    } catch (err) {
-      console.warn('[PAYMENT SERVICE] Prisma booking lookup warning:', (err as Error).message);
+    if (isDatabaseConnected()) {
+      try {
+        booking = await prisma.booking.findFirst({
+          where: { OR: [{ id: req.bookingId }, { bookingReference: req.bookingReference }] },
+          include: { payment: true, suite: true },
+        });
+      } catch (err) {
+        console.warn('[PAYMENT SERVICE] Prisma booking lookup warning:', (err as Error).message);
+      }
     }
 
     const totalAmount = booking ? booking.totalEstimatedPrice : req.amount;
@@ -45,8 +47,8 @@ export class PaymentService {
     const statusEnum = this.mapStatusToEnum(gatewayResult.status);
 
     // 3. Persist / Update Payment Record in PostgreSQL Database
-    try {
-      if (booking) {
+    if (isDatabaseConnected() && booking) {
+      try {
         const existingPayment = booking.payment;
         if (existingPayment) {
           const updatedPayment = await prisma.payment.update({
@@ -79,26 +81,10 @@ export class PaymentService {
           gatewayResult.paymentId = newPayment.id;
         }
 
-        // If payment is SUCCESSFUL or PARTIALLY_PAID, update booking status to CONFIRMED & dispatch notification
-        if (gatewayResult.status === 'SUCCESSFUL' || gatewayResult.status === 'PARTIALLY_PAID') {
-          await prisma.booking.update({
-            where: { id: booking.id },
-            data: { status: 'CONFIRMED' },
-          });
-
-          notificationService.notifyPaymentReceived({
-            email: booking.email,
-            phone: booking.phone,
-            fullName: booking.fullName,
-            bookingReference: booking.bookingReference,
-            amount: initialPaid,
-            currency: req.currency || 'GMD',
-            paymentMethod: req.provider,
-          }).catch((err) => console.warn('[PAYMENT NOTIFICATION ERROR]', err));
-        }
+        // Booking status remains PENDING until payment verification or staff confirmation
+      } catch (err) {
+        console.warn('[PAYMENT SERVICE] Prisma payment persistence warning:', (err as Error).message);
       }
-    } catch (err) {
-      console.warn('[PAYMENT SERVICE] Prisma payment persistence warning:', (err as Error).message);
     }
 
     if (!gatewayResult.paymentId) {

@@ -65,14 +65,14 @@ export class WaveAdapter implements IPaymentAdapter {
       bookingId: req.bookingId,
       bookingReference: req.bookingReference,
       amount: req.amount,
-      paidAmount,
+      paidAmount: 0,
       currency: req.currency || 'GMD',
       provider: 'WAVE',
-      status: paidAmount < req.amount ? 'PARTIALLY_PAID' : 'SUCCESSFUL',
+      status: 'PROCESSING',
       transactionRef: txRef,
-      instructions: `Wave Payment authorized for ${req.mobileWalletNumber || req.guestPhone}. QR and Wave Deep Link generated.`,
+      instructions: `Wave Payment initiated for ${req.mobileWalletNumber || req.guestPhone}. QR code and Wave deep link generated for customer authorization.`,
       qrCodeData: `wave://pay?amount=${paidAmount}&ref=${txRef}&merchant=KilifaSuites`,
-      requiresCustomerAction: false,
+      requiresCustomerAction: true,
     };
   }
 
@@ -101,14 +101,18 @@ export class WaveAdapter implements IPaymentAdapter {
       }
     }
 
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[WAVE] Production payment verification requires active WAVE_API_KEY and WAVE_MERCHANT_ID configuration.');
+    }
+
     return {
       transactionRef,
-      status: 'SUCCESSFUL',
+      status: 'PENDING',
       amount: 0,
       paidAmount: 0,
       currency: 'GMD',
       provider: 'WAVE',
-      gatewayMessage: 'Wave transaction verified (Sandbox)',
+      gatewayMessage: 'Wave transaction pending customer payment authorization (Sandbox)',
     };
   }
 

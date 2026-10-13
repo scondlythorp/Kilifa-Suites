@@ -56,19 +56,18 @@ export class ApsWalletAdapter implements IPaymentAdapter {
       }
     }
 
-    const isPartial = paidAmount < req.amount;
     return {
       paymentId: '',
       bookingId: req.bookingId,
       bookingReference: req.bookingReference,
       amount: req.amount,
-      paidAmount,
+      paidAmount: 0,
       currency: req.currency || 'GMD',
       provider: 'APS_WALLET',
-      status: isPartial ? 'PARTIALLY_PAID' : 'SUCCESSFUL',
+      status: 'PROCESSING',
       transactionRef: txRef,
-      instructions: `APS International Wallet payment processed successfully for ${req.guestName}.`,
-      requiresCustomerAction: false,
+      instructions: `APS International Wallet payment initiated. Please complete authorization in APS portal.`,
+      requiresCustomerAction: true,
     };
   }
 

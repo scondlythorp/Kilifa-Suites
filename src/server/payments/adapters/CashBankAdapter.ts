@@ -21,29 +21,20 @@ export class CashBankAdapter implements IPaymentAdapter {
   public async initiatePayment(req: InitiatePaymentRequest): Promise<InitiatePaymentResponse> {
     const prefix = this.provider === 'CASH' ? 'CASH' : 'BANK';
     const txRef = `${prefix}-${req.bookingReference}-${Date.now().toString().slice(-6)}`;
-    const paidAmount = req.paidAmount !== undefined ? req.paidAmount : req.amount;
-
-    let status: any = 'SUCCESSFUL';
-    if (paidAmount <= 0) {
-      status = 'PENDING';
-    } else if (paidAmount < req.amount) {
-      status = 'PARTIALLY_PAID';
-    }
-
     const instructions =
       this.provider === 'CASH'
-        ? `Cash payment of D ${Number(paidAmount).toLocaleString()} received at Kilifa Suites Front Desk.`
-        : `Bank Wire Transfer record created for D ${Number(paidAmount).toLocaleString()}. Ecobank Gambia / Trust Bank Gambia.`;
+        ? `Cash payment of D ${Number(req.amount).toLocaleString()} due at Kilifa Suites Front Desk upon arrival.`
+        : `Bank Wire Transfer created for D ${Number(req.amount).toLocaleString()}. Ecobank Gambia / Trust Bank Gambia. Present bank transfer slip at check-in.`;
 
     return {
       paymentId: '',
       bookingId: req.bookingId,
       bookingReference: req.bookingReference,
       amount: req.amount,
-      paidAmount,
+      paidAmount: 0,
       currency: req.currency || 'GMD',
       provider: this.provider,
-      status,
+      status: 'PENDING',
       transactionRef: txRef,
       instructions,
       requiresCustomerAction: false,

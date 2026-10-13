@@ -22,52 +22,19 @@ export const ContactPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const FORMSUBMIT_EMAIL = 'modoulaminthorp4@gmail.com';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      // 1. Submit to FormSubmit.co AJAX endpoint for instant email delivery to modoulaminthorp4@gmail.com
-      const formSubmitPromise = fetch(`https://formsubmit.co/ajax/${FORMSUBMIT_EMAIL}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone || 'Not provided',
-          subject: formData.subject,
-          message: formData.message,
-          _subject: `Kilifa Suites Inquiry: ${formData.subject} - ${formData.name}`,
-          _template: 'table',
-          _captcha: 'false',
-        }),
+      await api.contact.sendMessage({
+        fullName: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+        subject: formData.subject,
+        message: formData.message.trim(),
       });
-
-      // 2. Concurrently record into internal system database
-      const localApiPromise = api.contact
-        .sendMessage({
-          fullName: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          subject: formData.subject,
-          message: formData.message,
-        })
-        .catch((err) => {
-          console.warn('Local API storage note:', err);
-        });
-
-      const [res] = await Promise.all([formSubmitPromise, localApiPromise]);
-
-      if (!res.ok) {
-        const errorJson = await res.json().catch(() => null);
-        throw new Error(errorJson?.message || 'FormSubmit delivery error. Please try again or reach out on WhatsApp.');
-      }
 
       setSubmitted(true);
     } catch (err) {
@@ -197,18 +164,8 @@ export const ContactPage: React.FC = () => {
                 ) : (
                   <form
                     onSubmit={handleSubmit}
-                    action={`https://formsubmit.co/${FORMSUBMIT_EMAIL}`}
-                    method="POST"
                     className="space-y-6"
                   >
-                    {/* FormSubmit Configuration */}
-                    <input type="hidden" name="_captcha" value="false" />
-                    <input type="hidden" name="_template" value="table" />
-                    <input
-                      type="hidden"
-                      name="_subject"
-                      value={`Kilifa Suites Inquiry: ${formData.subject} - ${formData.name || 'Guest'}`}
-                    />
 
                     <div>
                       <h3 className="text-style-h3 text-[var(--color-text)] mb-1">

@@ -80,19 +80,18 @@ export class PayPalAdapter implements IPaymentAdapter {
       }
     }
 
-    const isPartial = paidAmount < req.amount;
     return {
       paymentId: '',
       bookingId: req.bookingId,
       bookingReference: req.bookingReference,
       amount: req.amount,
-      paidAmount,
+      paidAmount: 0,
       currency: req.currency || 'GMD',
       provider: 'PAYPAL',
-      status: isPartial ? 'PARTIALLY_PAID' : 'SUCCESSFUL',
+      status: 'PROCESSING',
       transactionRef: txRef,
-      instructions: `PayPal payment approved for ${req.guestEmail}.`,
-      requiresCustomerAction: false,
+      instructions: `PayPal checkout session initialized for ${req.guestEmail}. Buyer approval pending.`,
+      requiresCustomerAction: true,
     };
   }
 
