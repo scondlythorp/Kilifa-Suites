@@ -1,6 +1,6 @@
 import { SUITES_DATA } from '../../config/business';
 import { ApiError } from '../middleware/errorHandler';
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { BookingStatus, PaymentStatus, PaymentMethod, AccessCardStatus } from '@prisma/client';
 import { accessControlService } from './accessControlService';
 import { notificationService } from './notificationService';
@@ -382,26 +382,25 @@ class BookingService {
   }
 
   public async getBookingById(id: string): Promise<BookingRecord> {
-    try {
-      const booking = await prisma.booking.findFirst({
-        where: {
-          OR: [{ id }, { bookingReference: id }],
-        },
-        include: {
-          suite: true,
-          payment: true,
-          accessCard: true,
-        },
-      });
+    if (isDatabaseConnected()) {
+      try {
+        const booking = await prisma.booking.findFirst({
+          where: {
+            OR: [{ id }, { bookingReference: id }],
+          },
+          include: {
+            suite: true,
+            payment: true,
+            accessCard: true,
+          },
+        });
 
-      if (booking) {
-        return this.mapPrismaToRecord(booking);
+        if (booking) {
+          return this.mapPrismaToRecord(booking);
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
       }
-    } catch (err) {
-      if (!isMemoryFallbackAllowed()) {
-        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
-      }
-      console.warn('[BOOKING SERVICE] Prisma query failed, using memory fallback:', (err as Error).message);
     }
 
     const fallback = this.fallbackBookings.find(
@@ -416,24 +415,23 @@ class BookingService {
   }
 
   public async getAllBookings(): Promise<BookingRecord[]> {
-    try {
-      const bookings = await prisma.booking.findMany({
-        include: {
-          suite: true,
-          payment: true,
-          accessCard: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+    if (isDatabaseConnected()) {
+      try {
+        const bookings = await prisma.booking.findMany({
+          include: {
+            suite: true,
+            payment: true,
+            accessCard: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
 
-      if (bookings && bookings.length > 0) {
-        return bookings.map((b) => this.mapPrismaToRecord(b));
+        if (bookings && bookings.length > 0) {
+          return bookings.map((b) => this.mapPrismaToRecord(b));
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
       }
-    } catch (err) {
-      if (!isMemoryFallbackAllowed()) {
-        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
-      }
-      console.warn('[BOOKING SERVICE] Prisma query failed, returning fallback list:', (err as Error).message);
     }
 
     return this.fallbackBookings;

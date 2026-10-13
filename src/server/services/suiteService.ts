@@ -1,7 +1,7 @@
 import { SUITES_DATA } from '../../config/business';
 import { Suite } from '../../types';
 import { ApiError } from '../middleware/errorHandler';
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 
 export interface CreateSuiteDTO {
   name: string;
@@ -34,74 +34,78 @@ class SuiteService {
   private fallbackSuites: Suite[] = [...SUITES_DATA];
 
   public async getAllSuites(): Promise<Suite[]> {
-    try {
-      const suites = await prisma.suite.findMany({
-        include: {
-          house: true,
-          amenities: true,
-        },
-        orderBy: { slug: 'asc' },
-      });
-
-      if (suites && suites.length > 0) {
-        return suites.map((s) => {
-          const fallback = this.fallbackSuites.find((f) => f.slug === s.slug || f.id === s.id) || this.fallbackSuites[0];
-          return {
-            ...fallback,
-            id: s.id,
-            slug: s.slug,
-            name: s.name,
-            houseNumber: s.houseNumber as 1 | 2,
-            pricePerNight: s.pricePerNight,
-            maxOccupancy: s.maxOccupancy,
-            bedrooms: s.bedrooms,
-            bathrooms: s.bathrooms,
-            description: s.description,
-            floor: s.floor === 'Ground' ? 'Ground Floor' : (s.floor === 'Upper' ? 'First Floor' : s.floor as any),
-          };
+    if (isDatabaseConnected()) {
+      try {
+        const suites = await prisma.suite.findMany({
+          include: {
+            house: true,
+            amenities: true,
+          },
+          orderBy: { slug: 'asc' },
         });
+
+        if (suites && suites.length > 0) {
+          return suites.map((s) => {
+            const fallback = this.fallbackSuites.find((f) => f.slug === s.slug || f.id === s.id) || this.fallbackSuites[0];
+            return {
+              ...fallback,
+              id: s.id,
+              slug: s.slug,
+              name: s.name,
+              houseNumber: s.houseNumber as 1 | 2,
+              pricePerNight: s.pricePerNight,
+              maxOccupancy: s.maxOccupancy,
+              bedrooms: s.bedrooms,
+              bathrooms: s.bathrooms,
+              description: s.description,
+              floor: s.floor === 'Ground' ? 'Ground Floor' : (s.floor === 'Upper' ? 'First Floor' : s.floor as any),
+            };
+          });
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
       }
-    } catch (err) {
-      console.warn('[SUITE SERVICE] Prisma query failed, using fallback:', (err as Error).message);
     }
 
     return this.fallbackSuites;
   }
 
   public async getSuiteById(id: string): Promise<Suite> {
-    try {
-      const suite = await prisma.suite.findFirst({
-        where: {
-          OR: [
-            { id },
-            { slug: id },
-            { id: `suite-${id}` },
-          ],
-        },
-        include: {
-          house: true,
-          amenities: true,
-        },
-      });
+    if (isDatabaseConnected()) {
+      try {
+        const suite = await prisma.suite.findFirst({
+          where: {
+            OR: [
+              { id },
+              { slug: id },
+              { id: `suite-${id}` },
+            ],
+          },
+          include: {
+            house: true,
+            amenities: true,
+          },
+        });
 
-      if (suite) {
-        const fallback = this.fallbackSuites.find((f) => f.slug === suite.slug || f.id === suite.id) || this.fallbackSuites[0];
-        return {
-          ...fallback,
-          id: suite.id,
-          slug: suite.slug,
-          name: suite.name,
-          houseNumber: suite.houseNumber as 1 | 2,
-          pricePerNight: suite.pricePerNight,
-          maxOccupancy: suite.maxOccupancy,
-          bedrooms: suite.bedrooms,
-          bathrooms: suite.bathrooms,
-          description: suite.description,
-          floor: suite.floor === 'Ground' ? 'Ground Floor' : (suite.floor === 'Upper' ? 'First Floor' : suite.floor as any),
-        };
+        if (suite) {
+          const fallback = this.fallbackSuites.find((f) => f.slug === suite.slug || f.id === suite.id) || this.fallbackSuites[0];
+          return {
+            ...fallback,
+            id: suite.id,
+            slug: suite.slug,
+            name: suite.name,
+            houseNumber: suite.houseNumber as 1 | 2,
+            pricePerNight: suite.pricePerNight,
+            maxOccupancy: suite.maxOccupancy,
+            bedrooms: suite.bedrooms,
+            bathrooms: suite.bathrooms,
+            description: suite.description,
+            floor: suite.floor === 'Ground' ? 'Ground Floor' : (suite.floor === 'Upper' ? 'First Floor' : suite.floor as any),
+          };
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
       }
-    } catch (err) {
-      console.warn('[SUITE SERVICE] Prisma query failed, using fallback:', (err as Error).message);
     }
 
     const fallbackSuite = this.fallbackSuites.find(

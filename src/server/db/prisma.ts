@@ -24,10 +24,17 @@ try {
           url: validDbUrl,
         },
       },
-      log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+      log: [
+        { emit: 'event', level: 'error' },
+        { emit: 'event', level: 'warn' },
+      ],
     });
+
+  if ((prismaClient as any).$on) {
+    (prismaClient as any).$on('error', () => {});
+    (prismaClient as any).$on('warn', () => {});
+  }
 } catch (err) {
-  console.warn('[AI Studio] Database not connected — using mock proxy fallback:', (err as Error).message);
   const noOp = {
     findMany: async () => [],
     findFirst: async () => null,
@@ -54,14 +61,39 @@ if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
 }
 
+let isConnected = false;
+let hasCheckedConnection = false;
+
 export async function checkDatabaseConnection(): Promise<boolean> {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    return true;
-  } catch (error) {
-    console.warn('[PRISMA DB WARNING] Unable to connect to PostgreSQL instance via PrismaClient:', (error as Error).message);
+  if (hasCheckedConnection) {
+    return isConnected;
+  }
+
+  const rawDb = process.env.DATABASE_URL?.trim();
+  if (!rawDb || (!rawDb.startsWith('postgresql://') && !rawDb.startsWith('postgres://'))) {
+    isConnected = false;
+    hasCheckedConnection = true;
     return false;
   }
+
+  try {
+    // 1.5-second timeout to check availability without hanging
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 1500)),
+    ]);
+    isConnected = true;
+    hasCheckedConnection = true;
+    return true;
+  } catch {
+    isConnected = false;
+    hasCheckedConnection = true;
+    return false;
+  }
+}
+
+export function isDatabaseConnected(): boolean {
+  return isConnected;
 }
 
 // Graceful cleanup on server shutdown

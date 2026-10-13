@@ -1,5 +1,5 @@
 import { ApiError } from '../middleware/errorHandler';
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { BookingRecord } from './bookingService';
 
 export interface GuestProfileWithHistory {
@@ -82,31 +82,86 @@ class GuestService {
   ];
 
   public async getAllGuests(): Promise<GuestProfileWithHistory[]> {
-    try {
-      const guests = await prisma.guest.findMany({
-        include: {
-          bookings: {
-            include: { suite: true, payment: true },
-            orderBy: { createdAt: 'desc' },
+    if (isDatabaseConnected()) {
+      try {
+        const guests = await prisma.guest.findMany({
+          include: {
+            bookings: {
+              include: { suite: true, payment: true },
+              orderBy: { createdAt: 'desc' },
+            },
           },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+          orderBy: { createdAt: 'desc' },
+        });
 
-      if (guests && guests.length > 0) {
-        return guests.map((g) => {
-          const totalSpend = g.bookings.reduce((sum, b) => sum + (b.totalEstimatedPrice || 0), 0);
+        if (guests && guests.length > 0) {
+          return guests.map((g) => {
+            const totalSpend = g.bookings.reduce((sum, b) => sum + (b.totalEstimatedPrice || 0), 0);
+            return {
+              id: g.id,
+              fullName: g.fullName,
+              email: g.email,
+              phone: g.phone,
+              country: g.country || 'The Gambia',
+              vipStatus: g.vipStatus,
+              totalBookings: g.totalBookings || g.bookings.length,
+              totalSpend,
+              createdAt: g.createdAt.toISOString(),
+              bookings: g.bookings.map((b) => ({
+                id: b.id,
+                bookingReference: b.bookingReference,
+                fullName: b.fullName,
+                email: b.email,
+                phone: b.phone,
+                checkIn: b.checkIn.toISOString().split('T')[0],
+                checkOut: b.checkOut.toISOString().split('T')[0],
+                guestsCount: b.guestsCount,
+                preferredSuite: b.suiteId,
+                suiteName: b.suite ? b.suite.name : 'DAR',
+                pricePerNight: b.pricePerNight,
+                totalNights: b.totalNights,
+                totalEstimatedPrice: b.totalEstimatedPrice,
+                specialRequests: b.specialRequests || '',
+                status: b.status,
+                createdAt: b.createdAt.toISOString(),
+              })),
+            };
+          });
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+      }
+    }
+
+    return this.fallbackGuests;
+  }
+
+  public async getGuestById(id: string): Promise<GuestProfileWithHistory> {
+    if (isDatabaseConnected()) {
+      try {
+        const guest = await prisma.guest.findFirst({
+          where: { OR: [{ id }, { email: id }] },
+          include: {
+            bookings: {
+              include: { suite: true, payment: true },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
+
+        if (guest) {
+          const totalSpend = guest.bookings.reduce((sum, b) => sum + (b.totalEstimatedPrice || 0), 0);
           return {
-            id: g.id,
-            fullName: g.fullName,
-            email: g.email,
-            phone: g.phone,
-            country: g.country || 'The Gambia',
-            vipStatus: g.vipStatus,
-            totalBookings: g.totalBookings || g.bookings.length,
+            id: guest.id,
+            fullName: guest.fullName,
+            email: guest.email,
+            phone: guest.phone,
+            country: guest.country || 'The Gambia',
+            vipStatus: guest.vipStatus,
+            totalBookings: guest.totalBookings || guest.bookings.length,
             totalSpend,
-            createdAt: g.createdAt.toISOString(),
-            bookings: g.bookings.map((b) => ({
+            createdAt: guest.createdAt.toISOString(),
+            bookings: guest.bookings.map((b) => ({
               id: b.id,
               bookingReference: b.bookingReference,
               fullName: b.fullName,
@@ -125,61 +180,10 @@ class GuestService {
               createdAt: b.createdAt.toISOString(),
             })),
           };
-        });
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
       }
-    } catch (err) {
-      console.warn('[GUEST SERVICE] Prisma query failed, using memory fallback:', (err as Error).message);
-    }
-
-    return this.fallbackGuests;
-  }
-
-  public async getGuestById(id: string): Promise<GuestProfileWithHistory> {
-    try {
-      const guest = await prisma.guest.findFirst({
-        where: { OR: [{ id }, { email: id }] },
-        include: {
-          bookings: {
-            include: { suite: true, payment: true },
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      });
-
-      if (guest) {
-        const totalSpend = guest.bookings.reduce((sum, b) => sum + (b.totalEstimatedPrice || 0), 0);
-        return {
-          id: guest.id,
-          fullName: guest.fullName,
-          email: guest.email,
-          phone: guest.phone,
-          country: guest.country || 'The Gambia',
-          vipStatus: guest.vipStatus,
-          totalBookings: guest.totalBookings || guest.bookings.length,
-          totalSpend,
-          createdAt: guest.createdAt.toISOString(),
-          bookings: guest.bookings.map((b) => ({
-            id: b.id,
-            bookingReference: b.bookingReference,
-            fullName: b.fullName,
-            email: b.email,
-            phone: b.phone,
-            checkIn: b.checkIn.toISOString().split('T')[0],
-            checkOut: b.checkOut.toISOString().split('T')[0],
-            guestsCount: b.guestsCount,
-            preferredSuite: b.suiteId,
-            suiteName: b.suite ? b.suite.name : 'DAR',
-            pricePerNight: b.pricePerNight,
-            totalNights: b.totalNights,
-            totalEstimatedPrice: b.totalEstimatedPrice,
-            specialRequests: b.specialRequests || '',
-            status: b.status,
-            createdAt: b.createdAt.toISOString(),
-          })),
-        };
-      }
-    } catch (err) {
-      console.warn('[GUEST SERVICE] Prisma query failed, using memory fallback:', (err as Error).message);
     }
 
     const fallback = this.fallbackGuests.find((g) => g.id === id || g.email === id);

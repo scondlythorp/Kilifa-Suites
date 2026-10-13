@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Role } from '@prisma/client';
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { ApiError } from '../middleware/errorHandler';
 import { getJwtSecret, getJwtExpiresIn, isMemoryFallbackAllowed } from '../config/envConfig';
 
@@ -39,55 +39,52 @@ class AuthService {
   public async login(identifier: string, password: string): Promise<LoginResponse> {
     const raw = identifier.toLowerCase().trim();
 
-    try {
-      const user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: { equals: raw, mode: 'insensitive' } },
-            { name: { contains: raw, mode: 'insensitive' } },
-          ],
-        },
-      });
-
-      if (user && user.password) {
-        if (user.role !== Role.ADMIN) {
-          throw new ApiError(403, 'Access denied. Only System Admin accounts can access the management portal.');
-        }
-
-        const passwordMatches = await bcrypt.compare(password, user.password);
-        if (!passwordMatches) {
-          throw new ApiError(401, 'Invalid credentials. Please verify your login details.');
-        }
-
-        const payload = {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
-
-        const token = jwt.sign(payload, getJwtSecret(), {
-          expiresIn: getJwtExpiresIn() as any,
+    if (isDatabaseConnected()) {
+      try {
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: { equals: raw, mode: 'insensitive' } },
+              { name: { contains: raw, mode: 'insensitive' } },
+            ],
+          },
         });
 
-        return {
-          token,
-          user: {
+        if (user && user.password) {
+          if (user.role !== Role.ADMIN) {
+            throw new ApiError(403, 'Access denied. Only System Admin accounts can access the management portal.');
+          }
+
+          const passwordMatches = await bcrypt.compare(password, user.password);
+          if (!passwordMatches) {
+            throw new ApiError(401, 'Invalid credentials. Please verify your login details.');
+          }
+
+          const payload = {
             id: user.id,
             email: user.email,
             name: user.name,
             role: user.role,
-            createdAt: user.createdAt.toISOString(),
-          },
-        };
+          };
+
+          const token = jwt.sign(payload, getJwtSecret(), {
+            expiresIn: getJwtExpiresIn() as any,
+          });
+
+          return {
+            token,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+              createdAt: user.createdAt.toISOString(),
+            },
+          };
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
       }
-    } catch (err) {
-      if (err instanceof ApiError) throw err;
-      if (!isMemoryFallbackAllowed()) {
-        console.error('[AUTH SERVICE] Primary database unavailable and memory fallback is disabled:', (err as Error).message);
-        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
-      }
-      console.warn('[AUTH SERVICE] Database check failed, falling back to in-memory account directory:', (err as Error).message);
     }
 
     if (!isMemoryFallbackAllowed()) {
@@ -160,49 +157,55 @@ class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = `usr-admin-${Date.now()}`;
 
-    try {
-      const existing = await prisma.user.findFirst({
-        where: { email },
-      });
+    // Check if user already exists in memory fallback
+    if (FALLBACK_USERS[email] || Object.values(FALLBACK_USERS).some((u) => u.username === username)) {
+      throw new ApiError(409, 'An account with this email address or username already exists.');
+    }
 
-      if (existing) {
-        throw new ApiError(409, 'An account with this email address already exists.');
-      }
+    if (isDatabaseConnected()) {
+      try {
+        const existing = await prisma.user.findFirst({
+          where: { email },
+        });
 
-      const created = await prisma.user.create({
-        data: {
-          id: userId,
-          email,
-          name,
-          password: hashedPassword,
-          role: Role.ADMIN,
-        },
-      });
+        if (existing) {
+          throw new ApiError(409, 'An account with this email address already exists.');
+        }
 
-      const payload = {
-        id: created.id,
-        email: created.email,
-        name: created.name,
-        role: created.role,
-      };
+        const created = await prisma.user.create({
+          data: {
+            id: userId,
+            email,
+            name,
+            password: hashedPassword,
+            role: Role.ADMIN,
+          },
+        });
 
-      const token = jwt.sign(payload, getJwtSecret(), {
-        expiresIn: getJwtExpiresIn() as any,
-      });
-
-      return {
-        token,
-        user: {
+        const payload = {
           id: created.id,
           email: created.email,
           name: created.name,
           role: created.role,
-          createdAt: created.createdAt.toISOString(),
-        },
-      };
-    } catch (err) {
-      if (err instanceof ApiError) throw err;
-      console.warn('[AUTH SERVICE] Prisma create failed, saving to memory fallback:', (err as Error).message);
+        };
+
+        const token = jwt.sign(payload, getJwtSecret(), {
+          expiresIn: getJwtExpiresIn() as any,
+        });
+
+        return {
+          token,
+          user: {
+            id: created.id,
+            email: created.email,
+            name: created.name,
+            role: created.role,
+            createdAt: created.createdAt.toISOString(),
+          },
+        };
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+      }
     }
 
     // Save in memory fallback
@@ -252,32 +255,7 @@ class AuthService {
       throw new ApiError(400, 'New password must be at least 6 characters long.');
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    try {
-      const user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: { equals: raw, mode: 'insensitive' } },
-            { name: { contains: raw, mode: 'insensitive' } },
-          ],
-        },
-      });
-
-      if (user) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { password: hashedPassword },
-        });
-
-        return { message: 'Password has been successfully updated. You may now log in.' };
-      }
-    } catch (err) {
-      if (err instanceof ApiError) throw err;
-      console.warn('[AUTH SERVICE] Database password reset failed, checking fallback users:', (err as Error).message);
-    }
-
-    // Update in memory fallback
+    // 1. Check in-memory fallback users first
     const fallbackUser = Object.values(FALLBACK_USERS).find((acc) => {
       return (
         acc.email.toLowerCase() === raw ||
@@ -291,6 +269,32 @@ class AuthService {
       return { message: 'Password has been successfully updated. You may now log in.' };
     }
 
+    // 2. If database is connected, query and update in Prisma
+    if (isDatabaseConnected()) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      try {
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: { equals: raw, mode: 'insensitive' } },
+              { name: { contains: raw, mode: 'insensitive' } },
+            ],
+          },
+        });
+
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword },
+          });
+
+          return { message: 'Password has been successfully updated. You may now log in.' };
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+      }
+    }
+
     throw new ApiError(404, 'No account found matching this email or username.');
   }
 
@@ -298,28 +302,7 @@ class AuthService {
    * Retrieve current user profile by User ID
    */
   public async getProfile(userId: string): Promise<UserDTO> {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (user) {
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          createdAt: user.createdAt.toISOString(),
-        };
-      }
-    } catch (err) {
-      if (err instanceof ApiError) throw err;
-      if (!isMemoryFallbackAllowed()) {
-        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
-      }
-      console.warn('[AUTH SERVICE] Database query for profile failed, searching fallback users:', (err as Error).message);
-    }
-
+    // 1. Check in-memory fallback users first
     const fallback = Object.values(FALLBACK_USERS).find((u) => u.id === userId);
     if (fallback) {
       return {
@@ -328,6 +311,27 @@ class AuthService {
         name: fallback.name,
         role: fallback.role,
       };
+    }
+
+    // 2. Query Prisma only if database is connected
+    if (isDatabaseConnected()) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+
+        if (user) {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            createdAt: user.createdAt.toISOString(),
+          };
+        }
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+      }
     }
 
     throw new ApiError(404, 'User profile not found.');

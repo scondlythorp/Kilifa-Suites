@@ -191,11 +191,23 @@ console.log('\n--- 6. Testing Luxury Announcement Bar ---');
 const { ANNOUNCEMENT_MESSAGES } = await import('../src/components/layout/AnnouncementBar');
 assert.ok(Array.isArray(ANNOUNCEMENT_MESSAGES), 'ANNOUNCEMENT_MESSAGES must be an array');
 assert.equal(ANNOUNCEMENT_MESSAGES.length, 4, 'Must have exactly 4 luxury announcement messages');
-assert.ok(ANNOUNCEMENT_MESSAGES[0].text.includes('Welcome to Kilifa Suites'), 'Message 1 must be welcome message');
-assert.ok(ANNOUNCEMENT_MESSAGES[1].text.includes('Experience Exceptional Comfort'), 'Message 2 must be comfort message');
-assert.ok(ANNOUNCEMENT_MESSAGES[2].text.includes('Discover Your Perfect Stay'), 'Message 3 must be perfect stay message');
-assert.ok(ANNOUNCEMENT_MESSAGES[3].text.includes('Contact Us Today'), 'Message 4 must be contact message');
-console.log('✅ Luxury Announcement Bar verified with all 4 looping messages');
+assert.ok(ANNOUNCEMENT_MESSAGES[0].text.includes('Welcome to Kilifa Suites — Your Comfort, Our Priority'), 'Message 1 must be welcome message');
+assert.ok(ANNOUNCEMENT_MESSAGES[1].text.includes('Experience Exceptional Comfort and Relaxation'), 'Message 2 must be comfort message');
+assert.ok(ANNOUNCEMENT_MESSAGES[2].text.includes('Discover Your Perfect Stay with Kilifa Suites'), 'Message 3 must be perfect stay message');
+assert.ok(ANNOUNCEMENT_MESSAGES[3].text.includes('Contact Us Today to Plan Your Stay'), 'Message 4 must be contact message');
+
+// Verify elegant symbols are present
+assert.equal(ANNOUNCEMENT_MESSAGES[0].separator, '◆');
+assert.equal(ANNOUNCEMENT_MESSAGES[1].separator, '✦');
+assert.equal(ANNOUNCEMENT_MESSAGES[2].separator, '◆');
+assert.equal(ANNOUNCEMENT_MESSAGES[3].separator, '✦');
+
+// Verify AnnouncementBar component source has no close or dismiss button
+const announcementBarSource = fs.readFileSync(path.join(process.cwd(), 'src/components/layout/AnnouncementBar.tsx'), 'utf-8');
+assert.ok(!announcementBarSource.includes('handleDismiss'), 'Must have no handleDismiss function');
+assert.ok(!announcementBarSource.includes('Dismiss announcement'), 'Must have no dismiss button');
+assert.ok(!announcementBarSource.includes('isDismissed'), 'Must have no isDismissed state');
+console.log('✅ Luxury Announcement Bar verified: permanent, non-dismissible, 0 close buttons, with all 4 looping messages');
 
 console.log('\n======================================================');
 console.log('🏆 ALL PHASE 3 REGRESSION TESTS PASSED (0 FAILURES)!');

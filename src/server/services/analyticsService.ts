@@ -1,4 +1,7 @@
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
+import { bookingService } from './bookingService';
+import { suiteService } from './suiteService';
+import { guestService } from './guestService';
 
 export interface AnalyticsSummary {
   occupancy: {
@@ -67,21 +70,48 @@ export interface AnalyticsSummary {
 
 export class AnalyticsService {
   public async getAnalyticsReport(timeframe: '30d' | '90d' | 'year' | 'all' = 'all'): Promise<AnalyticsSummary> {
-    const bookings = await prisma.booking.findMany({
-      include: {
-        suite: true,
-        guest: true,
-        payment: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    let bookings: any[] = [];
+    let suites: any[] = [];
+    let guests: any[] = [];
+    let payments: any[] = [];
 
-    const suites = await prisma.suite.findMany({
-      include: { house: true },
-    });
+    if (isDatabaseConnected()) {
+      try {
+        bookings = await prisma.booking.findMany({
+          include: {
+            suite: true,
+            guest: true,
+            payment: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
 
-    const guests = await prisma.guest.findMany();
-    const payments = await prisma.payment.findMany();
+        suites = await prisma.suite.findMany({
+          include: { house: true },
+        });
+
+        guests = await prisma.guest.findMany();
+        payments = await prisma.payment.findMany();
+      } catch (err) {
+        // Fall back to in-memory services below
+      }
+    }
+
+    if (suites.length === 0) {
+      suites = await suiteService.getAllSuites();
+    }
+    if (bookings.length === 0) {
+      const fallbackRecords = await bookingService.getAllBookings();
+      bookings = fallbackRecords.map((b) => ({
+        ...b,
+        suiteId: b.preferredSuite || 'suite-101',
+        suite: { name: b.suiteName, houseNumber: 1 },
+        guest: { fullName: b.fullName, country: 'The Gambia' },
+      }));
+    }
+    if (guests.length === 0) {
+      guests = await guestService.getAllGuests();
+    }
 
     const totalSuites = Math.max(1, suites.length);
     const todayStr = new Date().toISOString().split('T')[0];

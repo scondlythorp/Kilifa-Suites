@@ -104,6 +104,9 @@ async function startServer() {
     }
   }
 
+  // Probe database connection once at startup
+  await checkDatabaseConnection();
+
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
     const isDbConnected = await checkDatabaseConnection();

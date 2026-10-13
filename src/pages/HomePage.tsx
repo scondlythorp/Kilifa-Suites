@@ -215,22 +215,6 @@ export const HomePage: React.FC = () => {
                 Explore Our Suites
               </Button>
             </div>
-
-            {/* Key Ribbon / Luxury Highlights */}
-            <div className="pt-8 sm:pt-12 w-full max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 border-t border-white/15 text-xs text-white/80">
-              <div className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
-                <Building2 className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span className="font-medium text-white/90">2 Houses • 12 Suites</span>
-              </div>
-              <div className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
-                <Zap className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span className="font-medium text-white/90">24/7 Solar Backup Power</span>
-              </div>
-              <div className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
-                <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span className="font-medium text-white/90">24/7 Gated Perimeter Security</span>
-              </div>
-            </div>
           </div>
         </Container>
       </section>
