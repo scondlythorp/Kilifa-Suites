@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Container } from '../common/Container';
 import { Button } from '../common/Button';
+import { AnnouncementBar } from './AnnouncementBar';
 import { BUSINESS_CONFIG } from '../../config/business';
 import { Menu, X, Calendar, ChevronDown, Shield, Sparkles, Image, Compass, Mail, Lock, MapPin } from 'lucide-react';
 
@@ -62,14 +63,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isDropdownActive = DROPDOWN_NAV_LINKS.some((link) => location.pathname === link.href);
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-[#0A0A0A]/95 backdrop-blur-md shadow-2xl py-3 border-b border-white/10'
-          : 'bg-gradient-to-b from-black/90 via-[#0A0A0A]/80 to-transparent py-5 border-b border-white/5'
-      }`}
-    >
-      <Container size="xl" className="flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-40">
+      {/* Luxury Announcement Bar */}
+      <AnnouncementBar />
+
+      {/* Main Navigation Bar */}
+      <div
+        className={`transition-all duration-300 ${
+          isScrolled
+            ? 'bg-[#0A0A0A]/95 backdrop-blur-md shadow-2xl py-3 border-b border-white/10'
+            : 'bg-gradient-to-b from-black/90 via-[#0A0A0A]/80 to-transparent py-4 sm:py-5 border-b border-white/5'
+        }`}
+      >
+        <Container size="xl" className="flex items-center justify-between">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center group focus:outline-none py-0.5">
           <img
@@ -175,6 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
       </Container>
+      </div>
     </header>
   );
 };

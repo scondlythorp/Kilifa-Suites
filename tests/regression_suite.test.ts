@@ -184,6 +184,19 @@ const expectedNames = [
 assert.deepEqual(OFFICIAL_SUITE_NAMES, expectedNames, 'Official 12 suite names must match exactly');
 console.log('✅ Business data, location, 2 houses, and 12 suite assignments fully verified');
 
+// ==========================================
+// 6. LUXURY ANNOUNCEMENT BAR VERIFICATION
+// ==========================================
+console.log('\n--- 6. Testing Luxury Announcement Bar ---');
+const { ANNOUNCEMENT_MESSAGES } = await import('../src/components/layout/AnnouncementBar');
+assert.ok(Array.isArray(ANNOUNCEMENT_MESSAGES), 'ANNOUNCEMENT_MESSAGES must be an array');
+assert.equal(ANNOUNCEMENT_MESSAGES.length, 4, 'Must have exactly 4 luxury announcement messages');
+assert.ok(ANNOUNCEMENT_MESSAGES[0].text.includes('Welcome to Kilifa Suites'), 'Message 1 must be welcome message');
+assert.ok(ANNOUNCEMENT_MESSAGES[1].text.includes('Experience Exceptional Comfort'), 'Message 2 must be comfort message');
+assert.ok(ANNOUNCEMENT_MESSAGES[2].text.includes('Discover Your Perfect Stay'), 'Message 3 must be perfect stay message');
+assert.ok(ANNOUNCEMENT_MESSAGES[3].text.includes('Contact Us Today'), 'Message 4 must be contact message');
+console.log('✅ Luxury Announcement Bar verified with all 4 looping messages');
+
 console.log('\n======================================================');
 console.log('🏆 ALL PHASE 3 REGRESSION TESTS PASSED (0 FAILURES)!');
 console.log('======================================================\n');
