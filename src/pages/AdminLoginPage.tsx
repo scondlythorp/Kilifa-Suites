@@ -230,6 +230,33 @@ export const AdminLoginPage: React.FC = () => {
               <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Dashboard'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+
+            {/* Quick-Fill Credentials Card for Administrative Access */}
+            <div className="pt-4 mt-2 border-t border-white/10">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-[#C5A059]/20 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-[#C5A059] font-medium tracking-wider uppercase text-[10px]">
+                    Authorized Admin Credentials
+                  </span>
+                  <span className="text-white/40 text-[10px]">Development & Testing</span>
+                </div>
+                <div className="text-xs text-white/70 font-mono space-y-1">
+                  <div>Email: <span className="text-white font-semibold">admin@kilifasuites.gm</span></div>
+                  <div>Password: <span className="text-white font-semibold">Kilifa2026!DevAdminSec</span></div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginIdentifier('admin@kilifasuites.gm');
+                    setLoginPassword('Kilifa2026!DevAdminSec');
+                    setError(null);
+                  }}
+                  className="w-full mt-1.5 py-1.5 px-3 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059]/25 border border-[#C5A059]/40 text-[#C5A059] text-xs font-mono font-medium transition-all text-center cursor-pointer"
+                >
+                  ⚡ Click to Auto-Fill Admin Credentials
+                </button>
+              </div>
+            </div>
           </form>
         )}
 
