@@ -5,7 +5,6 @@ import { Section } from '../components/common/Section';
 import { SectionHeader } from '../components/common/SectionHeader';
 import { Button } from '../components/common/Button';
 import { SuiteCard } from '../components/suites/SuiteCard';
-import { GoogleMapEmbed } from '../components/common/GoogleMapEmbed';
 import { ImagePlaceholder } from '../components/common/ImagePlaceholder';
 import { MediaCard } from '../components/media/MediaCard';
 import { VideoModal } from '../components/media/VideoModal';
@@ -465,53 +464,6 @@ export const HomePage: React.FC = () => {
         </Container>
       </Section>
 
-      {/* LOCATION SECTION */}
-      <Section background="surface">
-        <Container size="lg">
-          <SectionHeader
-            eyebrow="Lower River Region Hub"
-            title="Location"
-            description="Kilifa Suites is located along the main transit axis in Soma, providing convenient access for business and cross-border travel."
-          />
-
-          <div className="p-8 rounded-2xl bg-[#161616] border border-white/10 space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded bg-white/5 border border-[#C5A059]/40 text-[#C5A059]">
-                  <MapPin className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase tracking-[0.25em] text-[#C5A059] font-semibold block">
-                    Full Address
-                  </span>
-                  <span className="text-lg font-serif italic text-white">
-                    Tabokoto, Soma, Lower River Region, The Gambia
-                  </span>
-                </div>
-              </div>
-
-              <a
-                href={BUSINESS_CONFIG.location.googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 border border-[#C5A059] text-[#C5A059] text-xs font-semibold uppercase tracking-widest hover:bg-[#C5A059] hover:text-black transition-colors"
-              >
-                <span>Open Google Maps</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
-
-            {/* Interactive Live Google Map */}
-            <div className="w-full">
-              <GoogleMapEmbed
-                aspectClass="aspect-[21/9] sm:aspect-[16/7]"
-                heightClass="min-h-[380px]"
-                defaultZoom={14}
-              />
-            </div>
-          </div>
-        </Container>
-      </Section>
 
 
       {/* Video Modal */}
