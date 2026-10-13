@@ -29,18 +29,27 @@ interface ResetTokenRecord {
 const resetTokenStore = new Map<string, ResetTokenRecord>();
 
 // Initial admin password hash - NEVER stored as plaintext
-const initialAdminHash = process.env.ADMIN_PASSWORD_HASH || bcrypt.hashSync(process.env.ADMIN_INITIAL_PASSWORD || 'Kilifa2026!AdminKey', 10);
+const initialAdminHash =
+  process.env.ADMIN_PASSWORD_HASH ||
+  (process.env.ADMIN_INITIAL_PASSWORD
+    ? bcrypt.hashSync(process.env.ADMIN_INITIAL_PASSWORD, 10)
+    : process.env.NODE_ENV === 'production'
+    ? '' // In production mode, never instantiate a fallback account with a predictable password
+    : bcrypt.hashSync('Kilifa2026!DevAdminSec', 10));
 
-const FALLBACK_USERS: Record<string, { id: string; email: string; username: string; name: string; role: Role; passwordHash: string }> = {
-  'modoulaminthorp4@gmail.com': {
-    id: 'usr-admin-001',
-    email: 'modoulaminthorp4@gmail.com',
-    username: 'kilifasuites',
-    name: 'System Administrator',
-    role: Role.ADMIN,
-    passwordHash: initialAdminHash,
-  },
-};
+const FALLBACK_USERS: Record<string, { id: string; email: string; username: string; name: string; role: Role; passwordHash: string }> =
+  initialAdminHash
+    ? {
+        'modoulaminthorp4@gmail.com': {
+          id: 'usr-admin-001',
+          email: 'modoulaminthorp4@gmail.com',
+          username: 'kilifasuites',
+          name: 'System Administrator',
+          role: Role.ADMIN,
+          passwordHash: initialAdminHash,
+        },
+      }
+    : {};
 
 class AuthService {
   /**
@@ -250,17 +259,17 @@ class AuthService {
         expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes TTL
       });
 
-      // In non-production, expose debug token in response for safe testing
-      if (process.env.NODE_ENV !== 'production') {
+      // Only expose debug token in local development or test mode, NEVER in production
+      if (process.env.NODE_ENV !== 'production' && process.env.EXPOSE_DEV_DEBUG_TOKENS === 'true') {
         debugToken = rawToken;
       }
 
-      console.log(`[PASSWORD RESET TOKEN GENERATED for ${raw}] Token valid for 15 minutes: ${rawToken}`);
+      console.log(`[PASSWORD RESET] Single-use reset token generated for account: ${raw.slice(0, 3)}*** (Expires in 15m)`);
     }
 
     return {
       message: 'If an account matching this email address exists, password reset instructions have been sent.',
-      debugToken,
+      ...(debugToken && { debugToken }),
     };
   }
 

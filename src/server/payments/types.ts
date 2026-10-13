@@ -79,10 +79,21 @@ export interface PartialPaymentResult {
   status: PaymentStatus;
 }
 
+export interface WebhookVerificationResult {
+  verified: boolean;
+  transactionRef: string;
+  status: PaymentStatus;
+  amount?: number;
+  paidAmount?: number;
+  currency?: string;
+  gatewayMessage?: string;
+}
+
 export interface IPaymentAdapter {
   provider: PaymentProvider;
   isConfigured(): boolean;
   initiatePayment(req: InitiatePaymentRequest): Promise<InitiatePaymentResponse>;
   verifyPayment(transactionRef: string): Promise<PaymentVerificationResult>;
   refund(transactionRef: string, amount?: number): Promise<RefundResult>;
+  verifyWebhook?(payload: any, signatureHeader?: string): Promise<WebhookVerificationResult>;
 }

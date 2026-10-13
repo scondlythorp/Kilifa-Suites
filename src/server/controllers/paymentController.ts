@@ -139,3 +139,25 @@ export const getAllPayments = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
+export const handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const provider = req.params.provider?.toUpperCase() as any;
+    const signatureHeader =
+      (req.headers['wave-signature'] as string) ||
+      (req.headers['x-wave-signature'] as string) ||
+      (req.headers['x-signature'] as string) ||
+      (req.headers['stripe-signature'] as string) ||
+      '';
+
+    const result = await paymentService.processWebhook(provider, req.body, signatureHeader);
+
+    res.status(200).json({
+      status: 'success',
+      received: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

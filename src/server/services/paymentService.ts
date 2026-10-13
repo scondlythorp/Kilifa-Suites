@@ -262,6 +262,123 @@ export class PaymentService {
     return [];
   }
 
+  /**
+   * Process and verify inbound payment gateway webhook
+   * Validates HMAC signature, prevents duplicate replays, and confirms booking
+   */
+  public async processWebhook(
+    provider: PaymentProvider,
+    payload: any,
+    signatureHeader?: string
+  ) {
+    // 1. Verify Webhook Signature via Adapter
+    const verification = await paymentManager.handleWebhook(provider, payload, signatureHeader);
+
+    if (!verification.verified) {
+      throw new ApiError(401, `Webhook verification failed: ${verification.gatewayMessage || 'Invalid signature'}`);
+    }
+
+    const txRef = verification.transactionRef;
+    if (!txRef) {
+      throw new ApiError(400, 'Webhook payload missing transaction reference');
+    }
+
+    // 2. Locate associated payment record
+    let payment: any = null;
+    if (isDatabaseConnected()) {
+      try {
+        payment = await prisma.payment.findFirst({
+          where: {
+            OR: [
+              { transactionRef: txRef },
+              { id: txRef },
+            ],
+          },
+          include: {
+            booking: {
+              include: { suite: true },
+            },
+          },
+        });
+
+        if (payment) {
+          // Idempotency: Duplicate webhook detection
+          if (payment.status === 'SUCCESSFUL') {
+            return {
+              success: true,
+              duplicate: true,
+              message: 'Webhook received for already completed transaction. No changes required.',
+              transactionRef: txRef,
+              status: 'SUCCESSFUL',
+            };
+          }
+
+          if (verification.status === 'SUCCESSFUL') {
+            const confirmedPaid = verification.paidAmount || payment.amount;
+            await prisma.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'SUCCESSFUL' as any,
+                paidAmount: confirmedPaid,
+                paymentNotes: `${payment.paymentNotes || ''} | Verified via ${provider} webhook`.trim(),
+              },
+            });
+
+            // Authoritatively confirm booking
+            const updatedBooking = await prisma.booking.update({
+              where: { id: payment.bookingId },
+              data: { status: 'CONFIRMED' },
+              include: { suite: true },
+            });
+
+            // Activate access card
+            await prisma.accessCard.updateMany({
+              where: { bookingId: payment.bookingId },
+              data: { status: 'ACTIVE' },
+            });
+
+            // Dispatch Booking Confirmed Notification
+            notificationService
+              .notifyBookingConfirmed({
+                email: updatedBooking.email,
+                phone: updatedBooking.phone,
+                fullName: updatedBooking.fullName,
+                bookingReference: updatedBooking.bookingReference,
+                suiteName: updatedBooking.suite?.name || 'DAR',
+                checkIn: updatedBooking.checkIn.toISOString().split('T')[0],
+                checkOut: updatedBooking.checkOut.toISOString().split('T')[0],
+              })
+              .catch((err) => console.warn('[WEBHOOK NOTIFICATION ERROR]', err));
+          } else if (verification.status === 'FAILED') {
+            await prisma.payment.update({
+              where: { id: payment.id },
+              data: { status: 'FAILED' as any },
+            });
+          }
+
+          return {
+            success: true,
+            duplicate: false,
+            transactionRef: txRef,
+            status: verification.status,
+            message: `Webhook processed and payment updated to ${verification.status}`,
+          };
+        }
+      } catch (err: any) {
+        if (err instanceof ApiError) throw err;
+        console.warn('[PAYMENT WEBHOOK] Prisma update error:', err.message);
+      }
+    }
+
+    return {
+      success: true,
+      duplicate: false,
+      transactionRef: txRef,
+      status: verification.status,
+      message: `Webhook received and validated for ${provider}`,
+    };
+  }
+
   private mapProviderToEnum(provider: PaymentProvider): string {
     switch (provider) {
       case 'WAVE':

@@ -42,14 +42,15 @@ export class CashBankAdapter implements IPaymentAdapter {
   }
 
   public async verifyPayment(transactionRef: string): Promise<PaymentVerificationResult> {
+    // Physical cash and direct wire transfers remain PENDING until explicitly verified by Receptionist in the portal
     return {
       transactionRef,
-      status: 'SUCCESSFUL',
+      status: 'PENDING',
       amount: 0,
       paidAmount: 0,
       currency: 'GMD',
       provider: this.provider,
-      gatewayMessage: `${this.provider} transaction verified by Receptionist`,
+      gatewayMessage: `${this.provider} awaiting physical verification and confirmation by front-desk receptionist`,
     };
   }
 

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
   IPaymentAdapter,
   InitiatePaymentRequest,
@@ -6,6 +7,7 @@ import {
   PaymentStatus,
   PaymentVerificationResult,
   RefundResult,
+  WebhookVerificationResult,
 } from '../types';
 
 export class WaveAdapter implements IPaymentAdapter {
@@ -126,5 +128,93 @@ export class WaveAdapter implements IPaymentAdapter {
       remainingAmount: 0,
       gatewayMessage: 'Wave transaction refunded successfully',
     };
+  }
+
+  public async verifyWebhook(
+    payload: any,
+    signatureHeader?: string
+  ): Promise<WebhookVerificationResult> {
+    const webhookSecret = process.env.WAVE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('[WAVE WEBHOOK] Production webhook processing requires active WAVE_WEBHOOK_SECRET configuration.');
+      }
+      // Non-production fallback for local webhook testing
+      const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+      const txRef = parsed.client_reference || parsed.data?.client_reference || parsed.id || '';
+      return {
+        verified: Boolean(txRef),
+        transactionRef: txRef,
+        status: parsed.type === 'checkout.session.completed' || parsed.payment_status === 'succeeded' ? 'SUCCESSFUL' : 'PROCESSING',
+        amount: parseFloat(parsed.amount || parsed.data?.amount || '0'),
+        paidAmount: parseFloat(parsed.amount || parsed.data?.amount || '0'),
+        currency: parsed.currency || 'GMD',
+        gatewayMessage: 'Wave sandbox webhook verified without secret',
+      };
+    }
+
+    if (!signatureHeader) {
+      return {
+        verified: false,
+        transactionRef: '',
+        status: 'FAILED',
+        gatewayMessage: 'Missing Wave webhook signature header',
+      };
+    }
+
+    try {
+      const payloadString = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      const computedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(payloadString)
+        .digest('hex');
+
+      let incomingSig = signatureHeader.trim();
+      if (incomingSig.includes('v1=')) {
+        const match = incomingSig.match(/v1=([a-f0-9]+)/i);
+        if (match) incomingSig = match[1];
+      }
+
+      const sigBuffer = Buffer.from(incomingSig, 'hex');
+      const compBuffer = Buffer.from(computedSignature, 'hex');
+
+      const isMatch =
+        sigBuffer.length === compBuffer.length &&
+        crypto.timingSafeEqual(sigBuffer, compBuffer);
+
+      if (!isMatch) {
+        return {
+          verified: false,
+          transactionRef: '',
+          status: 'FAILED',
+          gatewayMessage: 'Invalid Wave webhook HMAC signature',
+        };
+      }
+
+      const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+      const txRef = parsed.client_reference || parsed.data?.client_reference || parsed.id || '';
+      const isComplete =
+        parsed.type === 'checkout.session.completed' ||
+        parsed.payment_status === 'succeeded' ||
+        parsed.status === 'succeeded';
+
+      return {
+        verified: true,
+        transactionRef: txRef,
+        status: isComplete ? 'SUCCESSFUL' : 'PROCESSING',
+        amount: parseFloat(parsed.amount || parsed.data?.amount || '0'),
+        paidAmount: parseFloat(parsed.amount || parsed.data?.amount || '0'),
+        currency: parsed.currency || 'GMD',
+        gatewayMessage: 'Wave HMAC signature verified successfully',
+      };
+    } catch (err) {
+      return {
+        verified: false,
+        transactionRef: '',
+        status: 'FAILED',
+        gatewayMessage: `Signature verification error: ${(err as Error).message}`,
+      };
+    }
   }
 }

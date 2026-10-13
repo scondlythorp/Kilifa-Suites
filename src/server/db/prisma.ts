@@ -62,17 +62,19 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 let isConnected = false;
-let hasCheckedConnection = false;
+let lastCheckTime = 0;
+const CHECK_CACHE_TTL = 10000; // 10 seconds cache to prevent query flooding
 
-export async function checkDatabaseConnection(): Promise<boolean> {
-  if (hasCheckedConnection) {
+export async function checkDatabaseConnection(force = false): Promise<boolean> {
+  const now = Date.now();
+  if (!force && now - lastCheckTime < CHECK_CACHE_TTL && lastCheckTime > 0) {
     return isConnected;
   }
 
   const rawDb = process.env.DATABASE_URL?.trim();
   if (!rawDb || (!rawDb.startsWith('postgresql://') && !rawDb.startsWith('postgres://'))) {
     isConnected = false;
-    hasCheckedConnection = true;
+    lastCheckTime = now;
     return false;
   }
 
@@ -83,11 +85,11 @@ export async function checkDatabaseConnection(): Promise<boolean> {
       new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 1500)),
     ]);
     isConnected = true;
-    hasCheckedConnection = true;
+    lastCheckTime = now;
     return true;
   } catch {
     isConnected = false;
-    hasCheckedConnection = true;
+    lastCheckTime = now;
     return false;
   }
 }

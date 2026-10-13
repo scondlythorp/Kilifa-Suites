@@ -72,14 +72,45 @@ export class ApsWalletAdapter implements IPaymentAdapter {
   }
 
   public async verifyPayment(transactionRef: string): Promise<PaymentVerificationResult> {
+    if (this.isConfigured()) {
+      try {
+        const response = await fetch(`https://api.apswallet.gm/v1/transactions/${transactionRef}`, {
+          headers: {
+            'X-API-KEY': process.env.APS_WALLET_API_KEY!,
+            'X-MERCHANT-ID': process.env.APS_MERCHANT_ID!,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const isSuccess = data.status === 'SUCCESS' || data.status === 'APPROVED';
+          return {
+            transactionRef,
+            status: isSuccess ? 'SUCCESSFUL' : 'PROCESSING',
+            amount: parseFloat(data.amount || '0'),
+            paidAmount: parseFloat(data.amount || '0'),
+            currency: 'GMD',
+            provider: 'APS_WALLET',
+            gatewayMessage: isSuccess ? 'APS Wallet payment verified' : 'Payment processing',
+            rawProviderData: data,
+          };
+        }
+      } catch (err) {
+        console.warn('[APS WALLET] Live verification error:', (err as Error).message);
+      }
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[APS_WALLET] Production payment verification requires active APS_WALLET_API_KEY and merchant configuration.');
+    }
+
     return {
       transactionRef,
-      status: 'SUCCESSFUL',
+      status: 'PENDING',
       amount: 0,
       paidAmount: 0,
       currency: 'GMD',
       provider: 'APS_WALLET',
-      gatewayMessage: 'APS Wallet payment verified',
+      gatewayMessage: 'APS Wallet transaction pending customer approval (Sandbox)',
     };
   }
 

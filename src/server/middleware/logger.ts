@@ -17,10 +17,16 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
   const start = Date.now();
   const timestamp = new Date().toISOString();
 
+  // Sanitize query parameters to protect guest PII, tokens, and credentials
+  const sanitizedUrl = req.originalUrl.replace(
+    /([?&](?:email|token|key|secret|password|card|cvv)=)[^&]*/gi,
+    '$1[REDACTED]'
+  );
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     console.log(
-      `[${timestamp}] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} (${duration}ms)`
+      `[${timestamp}] ${req.method} ${sanitizedUrl} - Status: ${res.statusCode} (${duration}ms)`
     );
   });
 

@@ -6,6 +6,7 @@ import {
   updatePaymentStatus,
   refundPayment,
   getAllPayments,
+  handleWebhook,
 } from '../controllers/paymentController';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware';
 import { strictActionRateLimiter } from '../middleware/rateLimiter';
@@ -13,9 +14,10 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
-// Public / Guest endpoints for checkout flow
+// Public / Gateway endpoints for checkout flow & inbound webhooks
 router.get('/providers', getProviders);
 router.post('/initiate', strictActionRateLimiter, initiatePayment);
+router.post('/webhook/:provider', strictActionRateLimiter, handleWebhook);
 
 // Protected Admin / Receptionist endpoints
 router.use(authenticateToken);
