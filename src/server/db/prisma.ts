@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { getSanitizedDatabaseUrl } from '../config/envConfig';
+import { getSanitizedDatabaseUrl, isDatabaseConfigured } from '../config/envConfig';
 
 declare global {
   // Allow global prisma across hot reloading in development
@@ -8,33 +8,36 @@ declare global {
 
 const validDbUrl = getSanitizedDatabaseUrl();
 
-// Ensure process.env.DATABASE_URL matches the sanitized valid URL
-if (!process.env.DATABASE_URL || (!process.env.DATABASE_URL.startsWith('postgresql://') && !process.env.DATABASE_URL.startsWith('postgres://'))) {
-  process.env.DATABASE_URL = validDbUrl;
-}
-
 let prismaClient: PrismaClient;
 
-try {
-  prismaClient =
-    global.prisma ||
-    new PrismaClient({
-      datasources: {
-        db: {
-          url: validDbUrl,
+if (validDbUrl) {
+  try {
+    prismaClient =
+      global.prisma ||
+      new PrismaClient({
+        datasources: {
+          db: {
+            url: validDbUrl,
+          },
         },
-      },
-      log: [
-        { emit: 'event', level: 'error' },
-        { emit: 'event', level: 'warn' },
-      ],
-    });
+        log: [
+          { emit: 'event', level: 'error' },
+          { emit: 'event', level: 'warn' },
+        ],
+      });
 
-  if ((prismaClient as any).$on) {
-    (prismaClient as any).$on('error', () => {});
-    (prismaClient as any).$on('warn', () => {});
+    if ((prismaClient as any).$on) {
+      (prismaClient as any).$on('error', () => {});
+      (prismaClient as any).$on('warn', () => {});
+    }
+  } catch (err) {
+    prismaClient = createNoOpProxy();
   }
-} catch (err) {
+} else {
+  prismaClient = createNoOpProxy();
+}
+
+function createNoOpProxy(): PrismaClient {
   const noOp = {
     findMany: async () => [],
     findFirst: async () => null,
@@ -46,7 +49,7 @@ try {
     aggregate: async () => ({ _sum: {}, _avg: {}, _count: {} }),
     groupBy: async () => [],
   };
-  prismaClient = new Proxy({}, {
+  return new Proxy({}, {
     get: (_, prop) => {
       if (prop === '$queryRaw' || prop === '$executeRaw') return async () => [];
       if (prop === '$disconnect' || prop === '$connect') return async () => {};
@@ -56,6 +59,7 @@ try {
 }
 
 export const prisma = prismaClient;
+export { isDatabaseConfigured };
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;

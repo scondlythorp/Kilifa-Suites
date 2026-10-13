@@ -3,7 +3,7 @@ import path from 'path';
 import cors from 'cors';
 
 import { getJwtSecret, isMemoryFallbackAllowed } from './config/envConfig';
-import { checkDatabaseConnection } from './db/prisma';
+import { checkDatabaseConnection, isDatabaseConfigured } from './db/prisma';
 
 import suiteRoutes from './routes/suiteRoutes';
 import bookingRoutes from './routes/bookingRoutes';
@@ -105,9 +105,11 @@ export function createExpressApp() {
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
     const isDbConnected = await checkDatabaseConnection();
+    const dbConfigured = isDatabaseConfigured();
     res.status(200).json({
-      status: 'ok',
+      status: isDbConnected ? 'ok' : dbConfigured ? 'degraded' : 'unconfigured_database',
       service: 'Kilifa Suites API',
+      databaseConfigured: dbConfigured,
       databaseConnected: isDbConnected,
       memoryFallbackAllowed: isMemoryFallbackAllowed(),
       environment: process.env.NODE_ENV || 'development',

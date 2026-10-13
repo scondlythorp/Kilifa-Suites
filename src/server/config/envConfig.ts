@@ -15,9 +15,9 @@ export function getJwtSecret(): string {
   const placeholder = 'kilifa_suites_jwt_secret_key_2026_super_secure';
 
   if (isProduction) {
-    if (!secret || secret === placeholder) {
+    if (!secret || secret === placeholder || secret.length < 32) {
       throw new Error(
-        '[FATAL CONFIGURATION ERROR] In production mode, JWT_SECRET must be explicitly set to a strong, non-default secret key in the environment. Application startup terminated.'
+        '[FATAL CONFIGURATION ERROR] In production mode, JWT_SECRET must be explicitly set to a strong, non-default secret key in the environment (at least 32 characters). Application startup terminated.'
       );
     }
     return secret;
@@ -79,13 +79,24 @@ export function isMemoryFallbackAllowed(): boolean {
 }
 
 /**
+ * Check if a valid PostgreSQL DATABASE_URL is configured in environment
+ */
+export function isDatabaseConfigured(): boolean {
+  const raw = process.env.DATABASE_URL?.trim();
+  return Boolean(raw && (raw.startsWith('postgresql://') || raw.startsWith('postgres://')));
+}
+
+/**
  * Phase 1.4: Sanitize Database URL to ensure valid postgres protocol prefix
+ * In production mode, returns empty string when unconfigured so no fictional localhost is assumed
  */
 export function getSanitizedDatabaseUrl(): string {
   const raw = process.env.DATABASE_URL?.trim();
-  const defaultUrl = 'postgresql://postgres:postgres@localhost:5432/kilifa_suites?schema=public';
   if (raw && (raw.startsWith('postgresql://') || raw.startsWith('postgres://'))) {
     return raw;
   }
-  return defaultUrl;
+  if (isProduction) {
+    return '';
+  }
+  return 'postgresql://postgres:postgres@localhost:5432/kilifa_suites?schema=public';
 }
