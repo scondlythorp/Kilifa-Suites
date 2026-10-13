@@ -108,7 +108,7 @@ export const getBookingById = async (req: Request, res: Response, next: NextFunc
     const booking = await bookingService.getBookingById(id);
 
     // Enforce booking ownership: Non-staff users (e.g. guests) can ONLY view their own bookings
-    const staffRoles = [Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF];
+    const staffRoles: Role[] = [Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF];
     if (authReq.user && !staffRoles.includes(authReq.user.role)) {
       const userEmail = authReq.user.email?.toLowerCase();
       const bookingEmail = booking.email?.toLowerCase();
