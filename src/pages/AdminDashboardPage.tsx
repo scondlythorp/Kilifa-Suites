@@ -13,6 +13,20 @@ import { NotificationsTab } from '../components/admin/NotificationsTab';
 import { AnalyticsTab } from '../components/admin/AnalyticsTab';
 import { api } from '../services/apiClient';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
+
+const DEFAULT_ADMIN_STATS = {
+  todaysBookings: 0,
+  upcomingBookings: 0,
+  checkInsToday: 0,
+  checkOutsToday: 0,
+  occupancyRate: 0,
+  totalRevenue: 0,
+  pendingRequestsCount: 0,
+  totalSuites: 12,
+  activeSuites: 12,
+  totalGuests: 0,
+};
 
 export const AdminDashboardPage: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -22,19 +36,8 @@ export const AdminDashboardPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Data State
-  const [stats, setStats] = useState<any>({
-    todaysBookings: 0,
-    upcomingBookings: 0,
-    checkInsToday: 0,
-    checkOutsToday: 0,
-    occupancyRate: 0,
-    totalRevenue: 0,
-    pendingRequestsCount: 0,
-    totalSuites: 0,
-    totalGuests: 0,
-  });
-
+  // Data State with resilient defaults
+  const [stats, setStats] = useState<any>(DEFAULT_ADMIN_STATS);
   const [suites, setSuites] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [guests, setGuests] = useState<any[]>([]);
@@ -53,11 +56,20 @@ export const AdminDashboardPage: React.FC = () => {
         api.media.getAll(true).catch(() => ({ data: [] })),
       ]);
 
-      if (statsRes?.data) setStats(statsRes.data);
-      if (suitesRes?.data) setSuites(suitesRes.data);
-      if (bookingsRes?.data) setBookings(bookingsRes.data);
-      if (guestsRes?.data) setGuests(guestsRes.data);
-      if (mediaRes?.data) setMediaList(mediaRes.data);
+      if (statsRes?.data && typeof statsRes.data === 'object') {
+        setStats((prev: any) => ({ ...DEFAULT_ADMIN_STATS, ...prev, ...statsRes.data }));
+      }
+      const rawSuites = suitesRes?.data ?? suitesRes;
+      setSuites(Array.isArray(rawSuites) ? rawSuites : []);
+
+      const rawBookings = bookingsRes?.data ?? bookingsRes;
+      setBookings(Array.isArray(rawBookings) ? rawBookings : []);
+
+      const rawGuests = guestsRes?.data ?? guestsRes;
+      setGuests(Array.isArray(rawGuests) ? rawGuests : []);
+
+      const rawMedia = mediaRes?.data ?? mediaRes;
+      setMediaList(Array.isArray(rawMedia) ? rawMedia : []);
     } catch (err) {
       setErrorMsg((err as Error).message || 'Failed to sync dashboard data from REST API.');
     } finally {
@@ -175,7 +187,7 @@ export const AdminDashboardPage: React.FC = () => {
       <AdminSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        pendingCount={stats.pendingRequestsCount}
+        pendingCount={stats?.pendingRequestsCount || 0}
       />
 
       {/* Main Content Area */}
@@ -215,54 +227,56 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Tab View Container */}
         <main className="p-4 sm:p-8 flex-1 overflow-y-auto">
-          {activeTab === 'dashboard' && (
-            <OverviewTab
-              stats={stats}
-              bookings={bookings}
-              onUpdateStatus={handleUpdateBookingStatus}
-              onNavigateToBookings={() => setActiveTab('bookings')}
-            />
-          )}
+          <ErrorBoundary fallbackTitle="Tab Display Recovery">
+            {activeTab === 'dashboard' && (
+              <OverviewTab
+                stats={stats}
+                bookings={bookings}
+                onUpdateStatus={handleUpdateBookingStatus}
+                onNavigateToBookings={() => setActiveTab('bookings')}
+              />
+            )}
 
-          {activeTab === 'suites' && (
-            <SuitesTab
-              suites={suites}
-              onCreateSuite={handleCreateSuite}
-              onUpdateSuite={handleUpdateSuite}
-              onDeleteSuite={handleDeleteSuite}
-            />
-          )}
+            {activeTab === 'suites' && (
+              <SuitesTab
+                suites={suites}
+                onCreateSuite={handleCreateSuite}
+                onUpdateSuite={handleUpdateSuite}
+                onDeleteSuite={handleDeleteSuite}
+              />
+            )}
 
-          {activeTab === 'bookings' && (
-            <BookingsTab
-              bookings={bookings}
-              onUpdateStatus={handleUpdateBookingStatus}
-            />
-          )}
+            {activeTab === 'bookings' && (
+              <BookingsTab
+                bookings={bookings}
+                onUpdateStatus={handleUpdateBookingStatus}
+              />
+            )}
 
-          {activeTab === 'guests' && (
-            <GuestsTab
-              guests={guests}
-              onUpdateProfile={handleUpdateGuestProfile}
-              onCheckIn={handleCheckInGuest}
-              onCheckOut={handleCheckOutGuest}
-              onUpdateSpecialRequests={handleUpdateSpecialRequests}
-            />
-          )}
+            {activeTab === 'guests' && (
+              <GuestsTab
+                guests={guests}
+                onUpdateProfile={handleUpdateGuestProfile}
+                onCheckIn={handleCheckInGuest}
+                onCheckOut={handleCheckOutGuest}
+                onUpdateSpecialRequests={handleUpdateSpecialRequests}
+              />
+            )}
 
-          {activeTab === 'media' && (
-            <MediaTab
-              mediaList={mediaList}
-              onCreateMedia={handleCreateMedia}
-              onUpdateMedia={handleUpdateMedia}
-              onDeleteMedia={handleDeleteMedia}
-              onTogglePublish={handleTogglePublishMedia}
-            />
-          )}
+            {activeTab === 'media' && (
+              <MediaTab
+                mediaList={mediaList}
+                onCreateMedia={handleCreateMedia}
+                onUpdateMedia={handleUpdateMedia}
+                onDeleteMedia={handleDeleteMedia}
+                onTogglePublish={handleTogglePublishMedia}
+              />
+            )}
 
-          {activeTab === 'access' && <AccessControlTab />}
-          {activeTab === 'notifications' && <NotificationsTab />}
-          {activeTab === 'analytics' && <AnalyticsTab />}
+            {activeTab === 'access' && <AccessControlTab />}
+            {activeTab === 'notifications' && <NotificationsTab />}
+            {activeTab === 'analytics' && <AnalyticsTab />}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

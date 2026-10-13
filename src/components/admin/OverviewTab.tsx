@@ -38,10 +38,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onUpdateStatus,
   onNavigateToBookings,
 }) => {
-  const pendingBookings = bookings.filter((b) => b.status === 'PENDING');
-  const recentBookings = bookings.slice(0, 6);
+  const safeStats = {
+    todaysBookings: 0,
+    upcomingBookings: 0,
+    checkInsToday: 0,
+    checkOutsToday: 0,
+    occupancyRate: 0,
+    totalRevenue: 0,
+    pendingRequestsCount: 0,
+    totalSuites: 12,
+    totalGuests: 0,
+    ...(stats || {}),
+  };
 
-  const getStatusBadge = (status: string) => {
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
+  const pendingBookings = safeBookings.filter((b) => b && b.status === 'PENDING');
+  const recentBookings = safeBookings.slice(0, 6);
+
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'CONFIRMED':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
@@ -70,7 +84,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-serif text-white font-bold">{stats.todaysBookings}</div>
+          <div className="text-3xl font-serif text-white font-bold">{safeStats.todaysBookings}</div>
           <p className="text-xs text-white/50 mt-1">Bookings scheduled or requested today</p>
         </div>
 
@@ -84,7 +98,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-serif text-white font-bold">{stats.upcomingBookings}</div>
+          <div className="text-3xl font-serif text-white font-bold">{safeStats.upcomingBookings}</div>
           <p className="text-xs text-white/50 mt-1">Future confirmed arrivals</p>
         </div>
 
@@ -98,7 +112,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <LogIn className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-serif text-white font-bold">{stats.checkInsToday}</div>
+          <div className="text-3xl font-serif text-white font-bold">{safeStats.checkInsToday}</div>
           <p className="text-xs text-emerald-400/80 mt-1 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" /> Guests arriving today
           </p>
@@ -114,7 +128,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <LogOut className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-serif text-white font-bold">{stats.checkOutsToday}</div>
+          <div className="text-3xl font-serif text-white font-bold">{safeStats.checkOutsToday}</div>
           <p className="text-xs text-white/50 mt-1">Departures scheduled today</p>
         </div>
 
@@ -129,15 +143,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
           <div className="text-3xl font-serif text-[#C5A059] font-bold">
-            {stats.occupancyRate}%
+            {safeStats.occupancyRate}%
           </div>
           <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
             <div
               className="bg-[#C5A059] h-full rounded-full transition-all duration-500"
-              style={{ width: `${stats.occupancyRate}%` }}
+              style={{ width: `${Math.max(0, Math.min(100, Number(safeStats.occupancyRate) || 0))}%` }}
             />
           </div>
-          <p className="text-[11px] text-white/50 mt-1">Based on {stats.totalSuites} total luxury suites</p>
+          <p className="text-[11px] text-white/50 mt-1">Based on {safeStats.totalSuites} total luxury suites</p>
         </div>
 
         {/* Revenue */}
@@ -151,7 +165,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
           <div className="text-3xl font-serif text-emerald-400 font-bold">
-            {formatGMD(stats.totalRevenue)}
+            {formatGMD(safeStats.totalRevenue)}
           </div>
           <p className="text-xs text-emerald-400/80 mt-1">Confirmed & checked-in total</p>
         </div>
@@ -167,7 +181,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
           <div className="text-3xl font-serif text-amber-400 font-bold">
-            {stats.pendingRequestsCount}
+            {safeStats.pendingRequestsCount}
           </div>
           <p className="text-xs text-amber-400/80 mt-1">Awaiting staff confirmation</p>
         </div>
@@ -182,7 +196,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-serif text-white font-bold">{stats.totalGuests}</div>
+          <div className="text-3xl font-serif text-white font-bold">{safeStats.totalGuests}</div>
           <p className="text-xs text-white/50 mt-1">Registered guests in system</p>
         </div>
       </div>

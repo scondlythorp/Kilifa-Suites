@@ -1,5 +1,5 @@
 import { MEDIA_GALLERY_DATA } from '../../config/business';
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { ApiError } from '../middleware/errorHandler';
 import { MediaType } from '@prisma/client';
 
@@ -46,38 +46,40 @@ class MediaService {
   }));
 
   public async getAllMedia(category?: string, type?: string, includeUnpublished = false): Promise<AdminMediaRecord[]> {
-    try {
-      const items = await prisma.media.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
+    if (isDatabaseConnected()) {
+      try {
+        const items = await prisma.media.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
 
-      if (items && items.length > 0) {
-        let filtered = items;
-        if (!includeUnpublished) {
-          filtered = filtered.filter((m) => ((m as any).published ?? true));
-        }
-        if (type && (type === 'image' || type === 'video')) {
-          filtered = filtered.filter((m) => m.type.toLowerCase() === type.toLowerCase());
-        }
-        if (category && category !== 'All') {
-          const catLower = category.toLowerCase();
-          filtered = filtered.filter((m) => m.category.toLowerCase() === catLower);
-        }
+        if (items && items.length > 0) {
+          let filtered = items;
+          if (!includeUnpublished) {
+            filtered = filtered.filter((m) => ((m as any).published ?? true));
+          }
+          if (type && (type === 'image' || type === 'video')) {
+            filtered = filtered.filter((m) => m.type.toLowerCase() === type.toLowerCase());
+          }
+          if (category && category !== 'All') {
+            const catLower = category.toLowerCase();
+            filtered = filtered.filter((m) => m.category.toLowerCase() === catLower);
+          }
 
-        return filtered.map((m) => ({
-          id: m.id,
-          title: m.title,
-          url: m.url,
-          type: m.type === MediaType.VIDEO ? 'video' : 'image',
-          category: m.category,
-          caption: m.caption || m.title,
-          alt: m.title,
-          published: (m as any).published ?? true,
-          createdAt: m.createdAt.toISOString(),
-        }));
+          return filtered.map((m) => ({
+            id: m.id,
+            title: m.title,
+            url: m.url,
+            type: m.type === MediaType.VIDEO ? 'video' : 'image',
+            category: m.category,
+            caption: m.caption || m.title,
+            alt: m.title,
+            published: (m as any).published ?? true,
+            createdAt: m.createdAt.toISOString(),
+          }));
+        }
+      } catch (err) {
+        // Fall back to memory silently
       }
-    } catch (err) {
-      console.warn('[MEDIA SERVICE] Prisma query failed, using memory fallback:', (err as Error).message);
     }
 
     let result = this.fallbackMedia;

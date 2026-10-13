@@ -14,6 +14,7 @@ import { LocationPage } from './pages/LocationPage';
 import { ContactPage } from './pages/ContactPage';
 import { BookingPage } from './pages/BookingPage';
 import { SecurityPage } from './pages/SecurityPage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Helper for preserving search query parameters across legacy route redirects
 const LegacyRedirect: React.FC<{ to: string }> = ({ to }) => {
@@ -35,23 +36,26 @@ const AdminDashboardPage = React.lazy(() =>
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Admin Management Route - Code-split from public bundle */}
-          <Route
-            path="/admin"
-            element={
-              <React.Suspense
-                fallback={
-                  <div className="min-h-screen bg-[#070B14] flex items-center justify-center text-[#C5A059] font-mono text-xs tracking-widest uppercase">
-                    Initializing Kilifa Suites Portal...
-                  </div>
-                }
-              >
-                <AdminDashboardPage />
-              </React.Suspense>
-            }
-          />
+      <ErrorBoundary fallbackTitle="Application Display Recovery">
+        <AuthProvider>
+          <Routes>
+            {/* Admin Management Route - Code-split from public bundle */}
+            <Route
+              path="/admin"
+              element={
+                <ErrorBoundary fallbackTitle="Admin Portal Recovery">
+                  <React.Suspense
+                    fallback={
+                      <div className="min-h-screen bg-[#070B14] flex items-center justify-center text-[#C5A059] font-mono text-xs tracking-widest uppercase">
+                        Initializing Kilifa Suites Portal...
+                      </div>
+                    }
+                  >
+                    <AdminDashboardPage />
+                  </React.Suspense>
+                </ErrorBoundary>
+              }
+            />
 
           {/* Public Guest Pages */}
           <Route

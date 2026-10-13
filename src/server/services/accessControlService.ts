@@ -1,4 +1,4 @@
-import { prisma } from '../db/prisma';
+import { prisma, isDatabaseConnected } from '../db/prisma';
 import { ApiError } from '../middleware/errorHandler';
 import { accessControlManager } from '../access/AccessControlManager';
 import { CreateCardRequest, SimulateEntryRequest } from '../access/types';
@@ -196,30 +196,32 @@ export class AccessControlService {
   }
 
   public async getAllCards() {
-    try {
-      const dbCards = await prisma.accessCard.findMany({
-        include: { booking: { include: { suite: true } } },
-        orderBy: { createdAt: 'desc' },
-      });
+    if (isDatabaseConnected()) {
+      try {
+        const dbCards = await prisma.accessCard.findMany({
+          include: { booking: { include: { suite: true } } },
+          orderBy: { createdAt: 'desc' },
+        });
 
-      if (dbCards && dbCards.length > 0) {
-        return dbCards.map((c) => ({
-          id: c.id,
-          bookingId: c.bookingId,
-          bookingReference: c.booking?.bookingReference || 'N/A',
-          cardNumber: c.cardNumber,
-          pinCode: c.pinCode,
-          digitalKeyToken: `BLE-SALTO-${c.id}`,
-          suiteName: c.booking?.suite?.name || 'Suite',
-          guestName: c.booking?.fullName || 'Guest',
-          validFrom: c.validFrom.toISOString(),
-          validUntil: c.validUntil.toISOString(),
-          status: c.status,
-          createdAt: c.createdAt.toISOString(),
-        }));
+        if (dbCards && dbCards.length > 0) {
+          return dbCards.map((c) => ({
+            id: c.id,
+            bookingId: c.bookingId,
+            bookingReference: c.booking?.bookingReference || 'N/A',
+            cardNumber: c.cardNumber,
+            pinCode: c.pinCode,
+            digitalKeyToken: `BLE-SALTO-${c.id}`,
+            suiteName: c.booking?.suite?.name || 'Suite',
+            guestName: c.booking?.fullName || 'Guest',
+            validFrom: c.validFrom.toISOString(),
+            validUntil: c.validUntil.toISOString(),
+            status: c.status,
+            createdAt: c.createdAt.toISOString(),
+          }));
+        }
+      } catch (err) {
+        // Fall back to demo card silently
       }
-    } catch (err) {
-      console.warn('[ACCESS SERVICE] Prisma getAllCards failed:', (err as Error).message);
     }
 
     // Fallback: return mock demo card

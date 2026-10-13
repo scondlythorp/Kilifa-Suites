@@ -149,7 +149,7 @@ export const SuitesTab: React.FC<SuitesTabProps> = ({
 
       {/* Suites Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {suites.map((suite) => (
+        {(Array.isArray(suites) ? suites : []).map((suite) => (
           <div
             key={suite.id}
             className="bg-[#131A2E] border border-white/10 rounded-2xl overflow-hidden hover:border-[#C5A059]/40 transition-all flex flex-col justify-between group"

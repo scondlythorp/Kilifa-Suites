@@ -74,19 +74,22 @@ export const GuestsTab: React.FC<GuestsTabProps> = ({
   };
 
   // Helper metrics
-  const totalGuests = guests.length;
-  const inHouseGuests = guests.filter((g) =>
-    g.bookings?.some((b: any) => b.status === 'CHECKED_IN')
+  const safeGuestList = Array.isArray(guests) ? guests : [];
+  const totalGuests = safeGuestList.length;
+  const inHouseGuests = safeGuestList.filter((g) =>
+    g && g.bookings?.some((b: any) => b.status === 'CHECKED_IN')
   ).length;
-  const vipCount = guests.filter((g) => g.vipStatus).length;
-  const totalLifetimeSpend = guests.reduce((sum, g) => {
+  const vipCount = safeGuestList.filter((g) => g && g.vipStatus).length;
+  const totalLifetimeSpend = safeGuestList.reduce((sum, g) => {
+    if (!g) return sum;
     const guestSpend = g.totalSpend || g.bookings?.reduce((bSum: number, b: any) => bSum + (b.totalEstimatedPrice || 0), 0) || 0;
     return sum + guestSpend;
   }, 0);
 
   // Filtering & Search logic
-  const filteredGuests = guests
+  const filteredGuests = safeGuestList
     .filter((g) => {
+      if (!g) return false;
       // Search match
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
