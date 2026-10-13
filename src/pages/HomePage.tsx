@@ -18,7 +18,6 @@ import {
   Zap,
   MapPin,
   ArrowRight,
-  Sparkles,
   Phone,
   Calendar,
   Wind,
@@ -32,7 +31,6 @@ import {
   Briefcase,
   Users,
   User,
-  Heart,
   Plane,
   Clock,
   CheckCircle2,
@@ -63,12 +61,9 @@ export const HomePage: React.FC = () => {
   // Accommodations target traveler categories
   const targetGuestCategories = [
     { label: 'Business', icon: Briefcase, description: 'Dedicated work tables & fiber Wi-Fi' },
-    { label: 'Leisure', icon: Sparkles, description: 'Tranquil gardens & relaxed atmosphere' },
     { label: 'Families', icon: Users, description: 'Interconnecting suite options & spacious living' },
-    { label: 'Couples', icon: Heart, description: 'Private master suites & secluded terraces' },
     { label: 'Solo Travelers', icon: User, description: 'Secure compound & responsive concierge' },
     { label: 'Groups', icon: Home, description: 'Full 6-suite house bookings available' },
-    { label: 'Workshops', icon: Building2, description: 'Meeting lounge space & group facilities' },
     { label: 'Transit Stays', icon: Plane, description: 'Convenient Lower River Region hub' },
     { label: 'Emergency Overnight', icon: Clock, description: '24/7 reception & rapid keycard check-in' },
   ];
@@ -518,37 +513,6 @@ export const HomePage: React.FC = () => {
         </Container>
       </Section>
 
-      {/* FINAL CTA SECTION */}
-      <Section background="dark">
-        <Container size="md" className="text-center">
-          <div className="p-8 sm:p-14 rounded-3xl bg-[#111111] border border-[#C5A059]/40 text-white shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#C5A059_1px,transparent_1px)] [background-size:20px_20px]" />
-            <div className="relative z-10 space-y-6 max-w-xl mx-auto">
-              <span className="text-[10px] uppercase tracking-[0.3em] font-semibold text-[#C5A059]">
-                Reservations & Inquiries
-              </span>
-
-              <h2 className="text-style-h1 text-white font-serif italic">
-                READY TO STAY WITH US?
-              </h2>
-
-              <p className="text-sm text-white/70 leading-relaxed">
-                Contact our concierge directly or submit an online booking inquiry to reserve your executive suite at Kilifa Suites in Soma.
-              </p>
-
-              <div className="pt-2 flex flex-wrap justify-center gap-4">
-                <Button to="/booking" variant="primary" size="lg">
-                  Book Your Stay
-                </Button>
-
-                <Button to="/contact" variant="secondary" size="lg">
-                  Contact Kilifa Suites
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
 
       {/* Video Modal */}
       {selectedVideo && (
