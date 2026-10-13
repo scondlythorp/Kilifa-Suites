@@ -70,9 +70,14 @@ interface RateLimitRecord {
 
 const rateLimitStore = new Map<string, RateLimitRecord>();
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 15; // 15 login attempts per window
+const MAX_REQUESTS = process.env.NODE_ENV === 'production' ? 60 : 500;
 
 export const authRateLimiter = (req: Request, res: Response, next: NextFunction) => {
+  // Allow unrestricted access in local development and preview testing
+  if (process.env.NODE_ENV !== 'production') {
+    return next();
+  }
+
   const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown-ip';
   const now = Date.now();
   const record = rateLimitStore.get(clientIp);

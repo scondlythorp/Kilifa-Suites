@@ -38,11 +38,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await api.auth.me();
         if (res?.data) {
           setUser(res.data);
+          try {
+            localStorage.setItem('kilifa_active_user', JSON.stringify(res.data));
+          } catch {}
           setTokenState(stored);
         }
       } catch (err) {
-        console.warn('[AUTH CONTEXT] Token verification failed:', (err as Error).message);
+        console.warn('[AUTH CONTEXT] Token verification note:', (err as Error).message);
+        // If environmental proxy intercepted or offline, check if active user is stored locally
+        const rawActive = localStorage.getItem('kilifa_active_user');
+        if (rawActive) {
+          try {
+            const cachedUser = JSON.parse(rawActive);
+            if (cachedUser?.id && cachedUser?.email) {
+              setUser(cachedUser);
+              setTokenState(stored);
+              setIsLoading(false);
+              return;
+            }
+          } catch {}
+        }
         removeStoredToken();
+        try {
+          localStorage.removeItem('kilifa_active_user');
+        } catch {}
         setUser(null);
         setTokenState(null);
       } finally {
@@ -59,6 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.auth.login({ identifier, password: pass });
       if (res?.token && res?.user) {
         setStoredToken(res.token);
+        try {
+          localStorage.setItem('kilifa_active_user', JSON.stringify(res.user));
+        } catch {}
         setTokenState(res.token);
         setUser(res.user);
       }
@@ -73,6 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.auth.register(data);
       if (res?.token && res?.user) {
         setStoredToken(res.token);
+        try {
+          localStorage.setItem('kilifa_active_user', JSON.stringify(res.user));
+        } catch {}
         setTokenState(res.token);
         setUser(res.user);
       }
@@ -93,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // ignore
     } finally {
       removeStoredToken();
+      try {
+        localStorage.removeItem('kilifa_active_user');
+      } catch {}
       setTokenState(null);
       setUser(null);
     }
