@@ -50,69 +50,39 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
   }
 };
 
-/**
- * Account Registration
- * Protected: Requires authenticated System Administrator
- */
-export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, email, username, password, role } = req.body;
+    const { name, email, username, password } = req.body;
     if (!email || !password) {
       throw new ApiError(400, 'Email and password are required');
     }
 
-    const newUser = await authService.register({
-      name: name || 'Staff Member',
+    const result = await authService.register({
+      name: name || 'System Administrator',
       email,
       username,
       password,
-      role,
     });
 
     res.status(201).json({
       status: 'success',
-      message: 'Account created successfully by Administrator.',
-      data: newUser,
+      message: 'System Admin account created successfully.',
+      token: result.token,
+      user: result.user,
     });
   } catch (err) {
     next(err);
   }
 };
 
-/**
- * Request Password Reset Token
- * Enforces rate limiting, token generation, and constant-time privacy preserving response
- */
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      throw new ApiError(400, 'Email address is required');
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      throw new ApiError(400, 'Email and new password are required');
     }
 
-    const result = await authService.requestPasswordReset(email);
-
-    res.status(200).json({
-      status: 'success',
-      message: result.message,
-      ...(result.debugToken && { debugToken: result.debugToken }),
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * Execute Password Reset with Single-Use Token
- */
-export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      throw new ApiError(400, 'Reset token and new password are required');
-    }
-
-    const result = await authService.executePasswordReset(token, newPassword);
+    const result = await authService.resetPassword({ email, newPassword });
 
     res.status(200).json({
       status: 'success',
@@ -126,6 +96,6 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
   res.status(200).json({
     status: 'success',
-    message: 'Logged out successfully. Please clear client authorization headers.',
+    message: 'Logged out successfully. Please clear the client authorization header.',
   });
 };

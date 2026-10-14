@@ -112,14 +112,6 @@ export class PaymentManager {
     const adapter = this.getAdapter(provider);
     return adapter.refund(transactionRef, amount);
   }
-
-  public async handleWebhook(provider: PaymentProvider, payload: any, signatureHeader?: string) {
-    const adapter = this.getAdapter(provider);
-    if (!adapter.verifyWebhook) {
-      throw new Error(`Provider '${provider}' does not support automated webhook verification.`);
-    }
-    return adapter.verifyWebhook(payload, signatureHeader);
-  }
 }
 
 export const paymentManager = new PaymentManager();

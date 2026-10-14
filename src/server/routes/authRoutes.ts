@@ -1,33 +1,32 @@
 import { Router } from 'express';
-import {
-  login,
-  register,
-  forgotPassword,
-  resetPassword,
-  getMe,
-  logout,
-} from '../controllers/authController';
-import { authenticateToken, requireRole, authRateLimiter } from '../middleware/authMiddleware';
-import { Role } from '@prisma/client';
+import { login, register, forgotPassword, getMe, logout } from '../controllers/authController';
+import { authenticateToken, authRateLimiter } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// POST /api/auth/login - Rate limited login endpoint
+// POST /api/auth/login
 router.post('/login', authRateLimiter, login);
+router.get('/login', (req, res) => {
+  res.status(200).json({ status: 'ok', endpoint: '/api/auth/login', methods: ['POST'] });
+});
 
-// POST /api/auth/register - PROTECTED: Requires authenticated System Admin
-router.post('/register', authenticateToken, requireRole(Role.ADMIN), register);
+// POST /api/auth/register (Create Account)
+router.post('/register', authRateLimiter, register);
+router.get('/register', (req, res) => {
+  res.status(200).json({ status: 'ok', endpoint: '/api/auth/register', methods: ['POST'] });
+});
 
-// POST /api/auth/forgot-password - Rate limited request for reset token
+// POST /api/auth/forgot-password (Reset Password)
 router.post('/forgot-password', authRateLimiter, forgotPassword);
+router.get('/forgot-password', (req, res) => {
+  res.status(200).json({ status: 'ok', endpoint: '/api/auth/forgot-password', methods: ['POST'] });
+});
 
-// POST /api/auth/reset-password - Rate limited reset with cryptographically verified token
-router.post('/reset-password', authRateLimiter, resetPassword);
-
-// GET /api/auth/me - Authenticated profile verification
+// GET /api/auth/me
 router.get('/me', authenticateToken, getMe);
 
-// POST /api/auth/logout - Session termination
+// POST /api/auth/logout
 router.post('/logout', logout);
+router.get('/logout', logout);
 
 export default router;

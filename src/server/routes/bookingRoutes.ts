@@ -4,7 +4,6 @@ import {
   getBookingById,
   getAllBookings,
   updateBookingStatus,
-  lookupBooking,
 } from '../controllers/bookingController';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware';
 import { strictActionRateLimiter } from '../middleware/rateLimiter';
@@ -14,9 +13,6 @@ const router = Router();
 
 // POST /api/bookings - Public endpoint for guest booking requests with rate limiting
 router.post('/', strictActionRateLimiter, createBooking);
-
-// GET /api/bookings/lookup/:bookingReference - Public endpoint for guests to check booking status
-router.get('/lookup/:bookingReference', strictActionRateLimiter, lookupBooking);
 
 // Protected booking management endpoints
 // GET /api/bookings - Staff, Receptionist, Admin, Owner access

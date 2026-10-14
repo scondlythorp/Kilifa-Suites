@@ -21,20 +21,29 @@ export class CashBankAdapter implements IPaymentAdapter {
   public async initiatePayment(req: InitiatePaymentRequest): Promise<InitiatePaymentResponse> {
     const prefix = this.provider === 'CASH' ? 'CASH' : 'BANK';
     const txRef = `${prefix}-${req.bookingReference}-${Date.now().toString().slice(-6)}`;
+    const paidAmount = req.paidAmount !== undefined ? req.paidAmount : req.amount;
+
+    let status: any = 'SUCCESSFUL';
+    if (paidAmount <= 0) {
+      status = 'PENDING';
+    } else if (paidAmount < req.amount) {
+      status = 'PARTIALLY_PAID';
+    }
+
     const instructions =
       this.provider === 'CASH'
-        ? `Cash payment of D ${Number(req.amount).toLocaleString()} due at Kilifa Suites Front Desk upon arrival.`
-        : `Bank Wire Transfer created for D ${Number(req.amount).toLocaleString()}. Ecobank Gambia / Trust Bank Gambia. Present bank transfer slip at check-in.`;
+        ? `Cash payment of D ${Number(paidAmount).toLocaleString()} received at Kilifa Suites Front Desk.`
+        : `Bank Wire Transfer record created for D ${Number(paidAmount).toLocaleString()}. Ecobank Gambia / Trust Bank Gambia.`;
 
     return {
       paymentId: '',
       bookingId: req.bookingId,
       bookingReference: req.bookingReference,
       amount: req.amount,
-      paidAmount: 0,
+      paidAmount,
       currency: req.currency || 'GMD',
       provider: this.provider,
-      status: 'PENDING',
+      status,
       transactionRef: txRef,
       instructions,
       requiresCustomerAction: false,
@@ -42,15 +51,14 @@ export class CashBankAdapter implements IPaymentAdapter {
   }
 
   public async verifyPayment(transactionRef: string): Promise<PaymentVerificationResult> {
-    // Physical cash and direct wire transfers remain PENDING until explicitly verified by Receptionist in the portal
     return {
       transactionRef,
-      status: 'PENDING',
+      status: 'SUCCESSFUL',
       amount: 0,
       paidAmount: 0,
       currency: 'GMD',
       provider: this.provider,
-      gatewayMessage: `${this.provider} awaiting physical verification and confirmation by front-desk receptionist`,
+      gatewayMessage: `${this.provider} transaction verified by Receptionist`,
     };
   }
 

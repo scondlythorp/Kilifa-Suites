@@ -96,13 +96,16 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
     { id: 'CANCELLED', label: 'Cancelled' },
   ];
 
-  const filteredBookings = bookings.filter((b) => {
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
+  const filteredBookings = safeBookings.filter((b) => {
+    if (!b) return false;
     const matchesStatus = selectedStatus === 'ALL' || b.status === selectedStatus;
-    const matchesSearch =
-      b.bookingReference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (b.suiteName && b.suiteName.toLowerCase().includes(searchQuery.toLowerCase()));
+    const ref = (b.bookingReference || '').toLowerCase();
+    const name = (b.fullName || '').toLowerCase();
+    const email = (b.email || '').toLowerCase();
+    const suite = (b.suiteName || '').toLowerCase();
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || ref.includes(q) || name.includes(q) || email.includes(q) || suite.includes(q);
 
     return matchesStatus && matchesSearch;
   });
@@ -151,8 +154,8 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({ bookings, onUpdateStat
           {statusOptions.map((opt) => {
             const count =
               opt.id === 'ALL'
-                ? bookings.length
-                : bookings.filter((b) => b.status === opt.id).length;
+                ? safeBookings.length
+                : safeBookings.filter((b) => b && b.status === opt.id).length;
             const isActive = selectedStatus === opt.id;
 
             return (

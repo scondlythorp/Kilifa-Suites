@@ -48,9 +48,11 @@ export const MediaTab: React.FC<MediaTabProps> = ({
 
   const categories = ['All', 'Suites', 'Houses', 'Pool', 'Lounge', 'Gardens', 'Security', 'Aerial'];
 
-  const filteredMedia = mediaList.filter((m) => {
+  const safeMediaList = Array.isArray(mediaList) ? mediaList : [];
+  const filteredMedia = safeMediaList.filter((m) => {
+    if (!m) return false;
     if (selectedCategory === 'All') return true;
-    return m.category.toLowerCase() === selectedCategory.toLowerCase();
+    return m.category && m.category.toLowerCase() === selectedCategory.toLowerCase();
   });
 
   const handleOpenAdd = () => {

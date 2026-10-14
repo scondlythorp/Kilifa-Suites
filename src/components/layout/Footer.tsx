@@ -187,10 +187,6 @@ export const Footer: React.FC = () => {
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059]" /> Private Keycard Compound
             </span>
-            <span>•</span>
-            <Link to="/admin" className="text-white/40 hover:text-[#C5A059] transition-colors">
-              Staff Portal
-            </Link>
           </div>
         </div>
       </Container>

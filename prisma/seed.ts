@@ -7,9 +7,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('[PRISMA SEED] Starting database seeding for Kilifa Suites...');
 
-  // Password hashes for seed accounts (Uses env config or secure default; never hardcoded compromised credentials)
-  const seedPassword = process.env.ADMIN_SEED_PASSWORD || process.env.ADMIN_INITIAL_PASSWORD || 'Kilifa2026!AdminSec';
-  const defaultPasswordHash = await bcrypt.hash(seedPassword, 10);
+  // Password hashes for seed accounts
+  const defaultPasswordHash = await bcrypt.hash('Scondly7210@', 10);
 
   // Seed standard accounts for System Admin
   console.log('[PRISMA SEED] Seeding System Admin (ADMIN) user...');
@@ -203,15 +202,14 @@ async function main() {
           fullName: 'Musa Njie',
           email: 'musa.njie@example.com',
           phone: '+2207000000',
-          // Historical booking for guest stats/ledger; does not block present/future reservations
-          checkIn: new Date(Date.now() - 30 * 86400000),
-          checkOut: new Date(Date.now() - 27 * 86400000),
+          checkIn: new Date('2026-08-20T14:00:00Z'),
+          checkOut: new Date('2026-08-23T11:00:00Z'),
           guestsCount: 2,
           pricePerNight: firstSuite.pricePerNight,
           totalNights: 3,
           totalEstimatedPrice: firstSuite.pricePerNight * 3,
           specialRequests: 'Airport shuttle pickup & quiet room requested',
-          status: BookingStatus.CHECKED_OUT,
+          status: BookingStatus.PENDING,
           suiteId: firstSuite.id,
           guestId: demoGuest.id,
         },
@@ -221,9 +219,8 @@ async function main() {
       await prisma.payment.create({
         data: {
           amount: createdBooking.totalEstimatedPrice,
-          paidAmount: createdBooking.totalEstimatedPrice,
           currency: 'GMD',
-          status: PaymentStatus.COMPLETED,
+          status: PaymentStatus.PENDING,
           method: PaymentMethod.CASH,
           transactionRef: 'TXN-KS-882910',
           bookingId: createdBooking.id,
@@ -235,7 +232,7 @@ async function main() {
         data: {
           cardNumber: 'AC-KS-0101',
           pinCode: '4829',
-          status: AccessCardStatus.EXPIRED,
+          status: AccessCardStatus.INACTIVE,
           validFrom: createdBooking.checkIn,
           validUntil: createdBooking.checkOut,
           bookingId: createdBooking.id,

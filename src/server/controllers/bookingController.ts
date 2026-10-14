@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../services/bookingService';
 import { ApiError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
-import { Role } from '@prisma/client';
 
 export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -49,12 +47,14 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
       if (isNaN(start.getTime())) errors.push('invalid checkIn date format');
       if (isNaN(end.getTime())) errors.push('invalid checkOut date format');
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (checkIn < todayStr) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (start < today) {
         errors.push('checkIn date cannot be in the past');
       }
 
-      if (checkIn >= checkOut) {
+      if (start >= end) {
         errors.push('checkOut date must be strictly after checkIn date');
       }
     }
@@ -104,61 +104,10 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
 export const getBookingById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const authReq = req as AuthRequest;
     const booking = await bookingService.getBookingById(id);
-
-    // Enforce booking ownership: Non-staff users (e.g. guests) can ONLY view their own bookings
-    const staffRoles: Role[] = [Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF];
-    if (authReq.user && !staffRoles.includes(authReq.user.role)) {
-      const userEmail = authReq.user.email?.toLowerCase();
-      const bookingEmail = booking.email?.toLowerCase();
-      if (!userEmail || !bookingEmail || userEmail !== bookingEmail) {
-        throw new ApiError(403, "Access denied. You are not authorized to view another guest's booking details.");
-      }
-    }
-
     res.status(200).json({
       status: 'success',
       data: booking,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const lookupBooking = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { bookingReference } = req.params;
-    const email = (req.query.email as string)?.trim().toLowerCase();
-
-    if (!bookingReference) {
-      throw new ApiError(400, 'Booking reference is required');
-    }
-
-    if (!email) {
-      throw new ApiError(400, 'Guest email address is required to look up a reservation.');
-    }
-
-    const booking = await bookingService.getBookingById(bookingReference);
-
-    if (booking.email.toLowerCase() !== email) {
-      throw new ApiError(404, 'No matching booking found for the provided reference and email address.');
-    }
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        bookingReference: booking.bookingReference,
-        fullName: booking.fullName,
-        suiteName: booking.suiteName,
-        checkIn: booking.checkIn,
-        checkOut: booking.checkOut,
-        guestsCount: booking.guestsCount,
-        totalNights: booking.totalNights,
-        totalEstimatedPrice: booking.totalEstimatedPrice,
-        status: booking.status,
-        paymentStatus: booking.payment?.status || 'PENDING',
-      },
     });
   } catch (err) {
     next(err);
