@@ -176,7 +176,7 @@ export const AdminLoginPage: React.FC = () => {
                   type="text"
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
-                  placeholder="admin@kilifasuites.gm or username"
+                  placeholder="name@example.com"
                   className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/30 focus:border-[#C5A059] focus:outline-none transition-all"
                   required
                   autoComplete="username"
@@ -225,62 +225,11 @@ export const AdminLoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-6 rounded-xl bg-[#C5A059] text-black font-semibold hover:bg-[#D4AF37] transition-all text-sm font-mono flex items-center justify-center gap-2 shadow-lg shadow-[#C5A059]/20 pt-3 mt-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3 px-6 rounded-xl bg-[#C5A059] text-black font-semibold hover:bg-[#D4AF37] transition-all text-sm font-mono flex items-center justify-center gap-2 shadow-lg shadow-[#C5A059]/20 pt-3 mt-4 cursor-pointer disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Dashboard'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-
-            {/* Quick-Fill Credentials Card for Administrative Access */}
-            <div className="pt-4 mt-2 border-t border-white/10">
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-[#C5A059]/30 space-y-2.5">
-                <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-[#C5A059] font-semibold tracking-wider uppercase text-[10px]">
-                    Authorized System Admin Credentials
-                  </span>
-                  <span className="text-emerald-400 text-[10px] font-mono">Active</span>
-                </div>
-                <div className="text-xs text-white/70 font-mono space-y-1 bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <div className="flex justify-between">
-                    <span>Email:</span>
-                    <span className="text-white font-semibold">modoulaminthorp4@gmail.com</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Username:</span>
-                    <span className="text-white font-semibold">kilifasuites</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Password:</span>
-                    <span className="text-[#C5A059] font-bold">Scondly7210@</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginIdentifier('modoulaminthorp4@gmail.com');
-                      setLoginPassword('Scondly7210@');
-                      setError(null);
-                    }}
-                    className="py-2 px-3 rounded-lg bg-[#C5A059] hover:bg-[#D4AF37] text-black text-xs font-mono font-bold transition-all text-center cursor-pointer shadow-md shadow-[#C5A059]/20"
-                  >
-                    ⚡ Auto-Fill (Email)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginIdentifier('kilifasuites');
-                      setLoginPassword('Scondly7210@');
-                      setError(null);
-                    }}
-                    className="py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 border border-[#C5A059]/50 text-white text-xs font-mono font-medium transition-all text-center cursor-pointer"
-                  >
-                    Auto-Fill (Username)
-                  </button>
-                </div>
-              </div>
-            </div>
           </form>
         )}
 
@@ -299,7 +248,7 @@ export const AdminLoginPage: React.FC = () => {
                   type="email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="admin@kilifasuites.gm"
+                  placeholder="admin@example.com"
                   className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/30 focus:border-[#C5A059] focus:outline-none transition-all"
                   required
                 />

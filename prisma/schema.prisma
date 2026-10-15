@@ -303,3 +303,16 @@ model AccessAuditLog {
   @@index([createdAt])
   @@index([eventType])
 }
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tokenHash])
+  @@index([email])
+}
+

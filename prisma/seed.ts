@@ -7,13 +7,16 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('[PRISMA SEED] Starting database seeding for Kilifa Suites...');
 
-  // Password hashes for seed accounts
-  const defaultPasswordHash = await bcrypt.hash('Scondly7210@', 10);
+  // Password hash for seed accounts - loaded strictly from environment, never hardcoded
+  const seedPassword = process.env.INITIAL_ADMIN_SEED_PASSWORD;
+  const defaultPasswordHash = seedPassword
+    ? await bcrypt.hash(seedPassword, 10)
+    : null;
 
   // Seed standard accounts for System Admin
   console.log('[PRISMA SEED] Seeding System Admin (ADMIN) user...');
   const seedUsers = [
-    { email: 'modoulaminthorp4@gmail.com', name: 'System Administrator', role: Role.ADMIN },
+    { email: 'admin@kilifasuites.com', name: 'System Administrator', role: Role.ADMIN },
   ];
 
   const userMap = new Map<string, string>();

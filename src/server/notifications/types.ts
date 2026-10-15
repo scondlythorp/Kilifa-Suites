@@ -5,7 +5,8 @@ export type NotificationType =
   | 'CHECK_IN_REMINDER'
   | 'CHECK_OUT_REMINDER'
   | 'BOOKING_CANCELLATION'
-  | 'ACCESS_CARD_INFO';
+  | 'ACCESS_CARD_INFO'
+  | 'PASSWORD_RESET';
 
 export type NotificationChannel = 'EMAIL' | 'WHATSAPP' | 'SMS';
 

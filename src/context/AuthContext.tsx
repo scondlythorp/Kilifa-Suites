@@ -13,8 +13,9 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (identifier: string, pass: string) => Promise<void>;
-  register: (data: { name: string; email: string; username?: string; password: string }) => Promise<void>;
-  forgotPassword: (data: { email: string; newPassword: string }) => Promise<string>;
+  register: (data: { name: string; email: string; username?: string; password: string; role?: string }) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<string>;
+  resetPassword: (token: string, newPassword: string) => Promise<string>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -38,26 +39,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await api.auth.me();
         if (res?.data) {
           setUser(res.data);
-          try {
-            localStorage.setItem('kilifa_active_user', JSON.stringify(res.data));
-          } catch {}
           setTokenState(stored);
+        } else {
+          throw new Error('Invalid session response');
         }
       } catch (err) {
-        console.warn('[AUTH CONTEXT] Token verification note:', (err as Error).message);
-        // If environmental proxy intercepted or offline, check if active user is stored locally
-        const rawActive = localStorage.getItem('kilifa_active_user');
-        if (rawActive) {
-          try {
-            const cachedUser = JSON.parse(rawActive);
-            if (cachedUser?.id && cachedUser?.email) {
-              setUser(cachedUser);
-              setTokenState(stored);
-              setIsLoading(false);
-              return;
-            }
-          } catch {}
-        }
+        // Fail closed: clear invalid/expired token and unauthenticate immediately
         removeStoredToken();
         try {
           localStorage.removeItem('kilifa_active_user');
@@ -78,9 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.auth.login({ identifier, password: pass });
       if (res?.token && res?.user) {
         setStoredToken(res.token);
-        try {
-          localStorage.setItem('kilifa_active_user', JSON.stringify(res.user));
-        } catch {}
         setTokenState(res.token);
         setUser(res.user);
       }
@@ -89,15 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (data: { name: string; email: string; username?: string; password: string }) => {
+  const register = async (data: { name: string; email: string; username?: string; password: string; role?: string }) => {
     setIsLoading(true);
     try {
       const res = await api.auth.register(data);
       if (res?.token && res?.user) {
         setStoredToken(res.token);
-        try {
-          localStorage.setItem('kilifa_active_user', JSON.stringify(res.user));
-        } catch {}
         setTokenState(res.token);
         setUser(res.user);
       }
@@ -106,16 +87,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const forgotPassword = async (data: { email: string; newPassword: string }): Promise<string> => {
-    const res = await api.auth.forgotPassword(data);
-    return res.message || 'Password has been updated.';
+  const requestPasswordReset = async (email: string): Promise<string> => {
+    const res = await api.auth.requestPasswordReset(email);
+    return res.message || 'If an account exists, reset instructions have been dispatched.';
+  };
+
+  const resetPassword = async (tokenStr: string, newPass: string): Promise<string> => {
+    const res = await api.auth.resetPassword(tokenStr, newPass);
+    return res.message || 'Password has been updated successfully.';
   };
 
   const logout = async () => {
     try {
       await api.auth.logout();
     } catch {
-      // ignore
+      // ignore network failure on logout
     } finally {
       removeStoredToken();
       try {
@@ -134,7 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
-        forgotPassword,
+        requestPasswordReset,
+        resetPassword,
         logout,
         isAuthenticated: Boolean(user && token),
       }}

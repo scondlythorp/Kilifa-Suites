@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { login, register, forgotPassword, getMe, logout } from '../controllers/authController';
-import { authenticateToken, authRateLimiter } from '../middleware/authMiddleware';
+import { login, register, forgotPassword, resetPassword, getMe, logout } from '../controllers/authController';
+import { authenticateToken, requireRole, authRateLimiter } from '../middleware/authMiddleware';
+import { Role } from '@prisma/client';
 
 const router = Router();
 
@@ -10,17 +11,19 @@ router.get('/login', (req, res) => {
   res.status(200).json({ status: 'ok', endpoint: '/api/auth/login', methods: ['POST'] });
 });
 
-// POST /api/auth/register (Create Account)
-router.post('/register', authRateLimiter, register);
-router.get('/register', (req, res) => {
-  res.status(200).json({ status: 'ok', endpoint: '/api/auth/register', methods: ['POST'] });
-});
+// POST /api/auth/register (Create Staff/Admin Account - Strictly Protected)
+router.post(
+  '/register',
+  authenticateToken,
+  requireRole(Role.ADMIN, Role.OWNER),
+  register
+);
 
-// POST /api/auth/forgot-password (Reset Password)
+// POST /api/auth/forgot-password (Initiate Single-Use Password Reset Request)
 router.post('/forgot-password', authRateLimiter, forgotPassword);
-router.get('/forgot-password', (req, res) => {
-  res.status(200).json({ status: 'ok', endpoint: '/api/auth/forgot-password', methods: ['POST'] });
-});
+
+// POST /api/auth/reset-password (Execute Password Reset with Verified Token)
+router.post('/reset-password', authRateLimiter, resetPassword);
 
 // GET /api/auth/me
 router.get('/me', authenticateToken, getMe);

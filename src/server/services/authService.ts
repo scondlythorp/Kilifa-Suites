@@ -5,6 +5,7 @@ import { Role } from '@prisma/client';
 import { prisma, isDatabaseConnected } from '../db/prisma';
 import { ApiError } from '../middleware/errorHandler';
 import { getJwtSecret, getJwtExpiresIn, isMemoryFallbackAllowed } from '../config/envConfig';
+import { notificationManager } from '../notifications/NotificationManager';
 
 export interface UserDTO {
   id: string;
@@ -25,49 +26,31 @@ interface ResetTokenRecord {
   expiresAt: number;
 }
 
-// In-memory token store for single-use password resets (15 minute TTL)
-const resetTokenStore = new Map<string, ResetTokenRecord>();
+// In-memory token store used ONLY when database is offline in non-production mode
+const resetTokenMemoryStore = new Map<string, ResetTokenRecord>();
 
-// Initial admin password hash - supports configured password and master Scondly7210@ credential
-const defaultAdminPlainPassword = process.env.ADMIN_INITIAL_PASSWORD || 'Scondly7210@';
-const initialAdminHash =
-  process.env.ADMIN_PASSWORD_HASH ||
-  bcrypt.hashSync(defaultAdminPlainPassword, 10);
-
+// Fallback users for development/test mode when database is not configured.
+// In production mode, this object is strictly empty. No credentials are hardcoded.
 const FALLBACK_USERS: Record<string, { id: string; email: string; username: string; name: string; role: Role; passwordHash: string }> =
-  initialAdminHash
+  process.env.NODE_ENV === 'production'
+    ? {}
+    : process.env.ADMIN_INITIAL_PASSWORD
     ? {
-        'admin@kilifasuites.gm': {
+        'admin@kilifasuites.com': {
           id: 'usr-admin-001',
-          email: 'admin@kilifasuites.gm',
+          email: process.env.ADMIN_INITIAL_EMAIL?.toLowerCase().trim() || 'admin@kilifasuites.com',
           username: 'admin',
-          name: 'Executive Administrator',
-          role: Role.ADMIN,
-          passwordHash: initialAdminHash,
-        },
-        'scondly4@gmail.com': {
-          id: 'usr-admin-002',
-          email: 'scondly4@gmail.com',
-          username: 'scondly',
           name: 'System Administrator',
           role: Role.ADMIN,
-          passwordHash: initialAdminHash,
-        },
-        'modoulaminthorp4@gmail.com': {
-          id: 'usr-admin-003',
-          email: 'modoulaminthorp4@gmail.com',
-          username: 'kilifasuites',
-          name: 'System Administrator',
-          role: Role.ADMIN,
-          passwordHash: initialAdminHash,
+          passwordHash: bcrypt.hashSync(process.env.ADMIN_INITIAL_PASSWORD, 10),
         },
       }
     : {};
 
 class AuthService {
   /**
-   * Authenticate user with email or username and password
-   * Only allows administrative roles to enter management portal
+   * Authenticate user with exact email and password
+   * Searches strictly by unique email, eliminating ambiguous substring or name-based matches
    */
   public async login(identifier: string, password: string): Promise<LoginResponse> {
     const raw = identifier.toLowerCase().trim();
@@ -76,10 +59,7 @@ class AuthService {
       try {
         const user = await prisma.user.findFirst({
           where: {
-            OR: [
-              { email: { equals: raw, mode: 'insensitive' } },
-              { name: { contains: raw, mode: 'insensitive' } },
-            ],
+            email: { equals: raw, mode: 'insensitive' },
           },
         });
 
@@ -125,27 +105,11 @@ class AuthService {
       throw new ApiError(401, 'Invalid credentials. Account not found.');
     }
 
-    // Search in fallback accounts
-    const fallbackUser = Object.values(FALLBACK_USERS).find((acc) => {
-      const emailMatch = acc.email.toLowerCase() === raw;
-      const usernameMatch = acc.username.toLowerCase() === raw;
-      return emailMatch || usernameMatch;
-    });
+    // Search development fallback accounts
+    const fallbackUser = Object.values(FALLBACK_USERS).find((acc) => acc.email.toLowerCase() === raw);
 
     if (fallbackUser) {
-      let passwordMatches = await bcrypt.compare(password, fallbackUser.passwordHash);
-      if (!passwordMatches) {
-        const acceptedPasswords = [
-          'Scondly7210@',
-          'Kilifa2026!DevAdminSec',
-          'Kilifa2026!AdminSec',
-          'Kilifa2026!AdminKey',
-          'Kilifa2026!',
-        ];
-        if (acceptedPasswords.includes(password)) {
-          passwordMatches = true;
-        }
-      }
+      const passwordMatches = await bcrypt.compare(password, fallbackUser.passwordHash);
 
       if (!passwordMatches) {
         throw new ApiError(401, 'Invalid credentials. Please verify your login details.');
@@ -178,11 +142,10 @@ class AuthService {
 
   /**
    * Create / Register an authorized staff or administrator account
-   * Protected: Callable only by authenticated System Administrators
+   * Protected: Callable only by authenticated System Administrators or Owners
    */
   public async register(data: { name: string; email: string; username?: string; password: string; role?: Role }): Promise<UserDTO> {
     const email = data.email.toLowerCase().trim();
-    const username = (data.username || email.split('@')[0]).toLowerCase().trim();
     const name = data.name.trim() || 'Staff Member';
     const password = data.password.trim();
     const role = data.role || Role.STAFF;
@@ -195,47 +158,42 @@ class AuthService {
       throw new ApiError(400, 'Password must be at least 8 characters long.');
     }
 
-    // Check if user exists in fallback
-    if (FALLBACK_USERS[email] || Object.values(FALLBACK_USERS).some((u) => u.username === username)) {
-      throw new ApiError(409, 'An account with this email address or username already exists.');
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = `usr-${Date.now()}`;
 
     if (isDatabaseConnected()) {
-      try {
-        const existing = await prisma.user.findFirst({ where: { email } });
-        if (existing) {
-          throw new ApiError(409, 'An account with this email address already exists.');
-        }
-
-        const created = await prisma.user.create({
-          data: {
-            id: userId,
-            email,
-            name,
-            password: hashedPassword,
-            role,
-          },
-        });
-
-        return {
-          id: created.id,
-          email: created.email,
-          name: created.name,
-          role: created.role,
-          createdAt: created.createdAt.toISOString(),
-        };
-      } catch (err) {
-        if (err instanceof ApiError) throw err;
+      const existing = await prisma.user.findFirst({ where: { email } });
+      if (existing) {
+        throw new ApiError(409, 'An account with this email address already exists.');
       }
+
+      const created = await prisma.user.create({
+        data: {
+          id: userId,
+          email,
+          name,
+          password: hashedPassword,
+          role,
+        },
+      });
+
+      return {
+        id: created.id,
+        email: created.email,
+        name: created.name,
+        role: created.role,
+        createdAt: created.createdAt.toISOString(),
+      };
+    }
+
+    if (!isMemoryFallbackAllowed()) {
+      throw new ApiError(503, 'Database service is currently unavailable. Account registration failed.');
     }
 
     FALLBACK_USERS[email] = {
       id: userId,
       email,
-      username,
+      username: email.split('@')[0],
       name,
       role,
       passwordHash: hashedPassword,
@@ -251,8 +209,9 @@ class AuthService {
 
   /**
    * Request password reset token
-   * Generates a 32-byte cryptographically secure single-use token (valid 15 minutes)
-   * Returns a generic response to prevent user enumeration
+   * Generates a 32-byte cryptographically secure token (valid 15 minutes)
+   * Persists token hash in database to support serverless environments
+   * Returns a generic response to prevent account enumeration
    */
   public async requestPasswordReset(email: string): Promise<{ message: string; debugToken?: string }> {
     const raw = email.toLowerCase().trim();
@@ -267,9 +226,7 @@ class AuthService {
         const user = await prisma.user.findUnique({ where: { email: raw } });
         if (user) userExists = true;
       } catch {}
-    }
-
-    if (!userExists && FALLBACK_USERS[raw]) {
+    } else if (FALLBACK_USERS[raw]) {
       userExists = true;
     }
 
@@ -277,20 +234,62 @@ class AuthService {
 
     if (userExists) {
       const rawToken = crypto.randomBytes(32).toString('hex');
-      const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes TTL
 
-      resetTokenStore.set(hashedToken, {
-        email: raw,
-        hashedToken,
-        expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes TTL
-      });
-
-      // Only expose debug token in local development or test mode, NEVER in production
-      if (process.env.NODE_ENV !== 'production' && process.env.EXPOSE_DEV_DEBUG_TOKENS === 'true') {
-        debugToken = rawToken;
+      if (isDatabaseConnected()) {
+        try {
+          // Persist token in database across serverless invocations
+          await prisma.passwordResetToken.create({
+            data: {
+              email: raw,
+              tokenHash,
+              expiresAt,
+              used: false,
+            },
+          });
+        } catch (dbErr) {
+          console.warn('[PASSWORD RESET] Could not persist token to database:', (dbErr as Error).message);
+          resetTokenMemoryStore.set(tokenHash, {
+            email: raw,
+            hashedToken: tokenHash,
+            expiresAt: expiresAt.getTime(),
+          });
+        }
+      } else {
+        resetTokenMemoryStore.set(tokenHash, {
+          email: raw,
+          hashedToken: tokenHash,
+          expiresAt: expiresAt.getTime(),
+        });
       }
 
-      console.log(`[PASSWORD RESET] Single-use reset token generated for account: ${raw.slice(0, 3)}*** (Expires in 15m)`);
+      // Check email provider configuration
+      const emailProvider = notificationManager.getProvider('EMAIL');
+      const emailConfigured = emailProvider && emailProvider.isConfigured();
+
+      if (emailConfigured) {
+        try {
+          await notificationManager.dispatch(
+            {
+              type: 'PASSWORD_RESET',
+              recipient: { email: raw, name: 'Administrative User' },
+              metadata: {
+                token: rawToken,
+                expiresInMinutes: 15,
+              },
+            },
+            ['EMAIL']
+          );
+        } catch (dispatchErr) {
+          console.warn('[PASSWORD RESET] Email dispatch failed:', (dispatchErr as Error).message);
+        }
+      }
+
+      // Expose debug token ONLY in local automated test environment, never in production
+      if (process.env.NODE_ENV !== 'production' && (process.env.EXPOSE_DEV_DEBUG_TOKENS === 'true' || process.env.NODE_ENV === 'test')) {
+        debugToken = rawToken;
+      }
     }
 
     return {
@@ -312,38 +311,54 @@ class AuthService {
       throw new ApiError(400, 'New password must be at least 8 characters long.');
     }
 
-    const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
-    const tokenRecord = resetTokenStore.get(hashedToken);
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    let targetEmail: string | null = null;
 
-    if (!tokenRecord) {
+    if (isDatabaseConnected()) {
+      const tokenRecord = await prisma.passwordResetToken.findUnique({
+        where: { tokenHash },
+      });
+
+      if (!tokenRecord || tokenRecord.used || new Date() > tokenRecord.expiresAt) {
+        throw new ApiError(400, 'Invalid or expired password reset token. Please request a new reset link.');
+      }
+
+      targetEmail = tokenRecord.email;
+      const newHash = await bcrypt.hash(newPassword.trim(), 10);
+
+      // Atomic update of user password and token status
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { email: targetEmail },
+          data: { password: newHash },
+        }),
+        prisma.passwordResetToken.update({
+          where: { id: tokenRecord.id },
+          data: { used: true },
+        }),
+      ]);
+
+      return {
+        message: 'Password has been successfully updated. You may now sign in with your new credentials.',
+      };
+    }
+
+    // Fallback store check (non-production only)
+    const memRecord = resetTokenMemoryStore.get(tokenHash);
+    if (!memRecord || Date.now() > memRecord.expiresAt) {
+      if (memRecord) resetTokenMemoryStore.delete(tokenHash);
       throw new ApiError(400, 'Invalid or expired password reset token. Please request a new reset link.');
     }
 
-    if (Date.now() > tokenRecord.expiresAt) {
-      resetTokenStore.delete(hashedToken);
-      throw new ApiError(400, 'Password reset token has expired. Please request a new reset link.');
-    }
-
-    const targetEmail = tokenRecord.email;
+    targetEmail = memRecord.email;
     const newHash = await bcrypt.hash(newPassword.trim(), 10);
 
-    // Update in database if connected
-    if (isDatabaseConnected()) {
-      try {
-        await prisma.user.update({
-          where: { email: targetEmail },
-          data: { password: newHash },
-        });
-      } catch {}
-    }
-
-    // Update in fallback store
     if (FALLBACK_USERS[targetEmail]) {
       FALLBACK_USERS[targetEmail].passwordHash = newHash;
     }
 
-    // Invalidate token immediately (Single-use enforcement)
-    resetTokenStore.delete(hashedToken);
+    // Invalidate immediately
+    resetTokenMemoryStore.delete(tokenHash);
 
     return {
       message: 'Password has been successfully updated. You may now sign in with your new credentials.',
@@ -354,16 +369,6 @@ class AuthService {
    * Retrieve current user profile by User ID
    */
   public async getProfile(userId: string): Promise<UserDTO> {
-    const fallback = Object.values(FALLBACK_USERS).find((u) => u.id === userId);
-    if (fallback) {
-      return {
-        id: fallback.id,
-        email: fallback.email,
-        name: fallback.name,
-        role: fallback.role,
-      };
-    }
-
     if (isDatabaseConnected()) {
       try {
         const user = await prisma.user.findUnique({
@@ -382,6 +387,16 @@ class AuthService {
       } catch (err) {
         if (err instanceof ApiError) throw err;
       }
+    }
+
+    const fallback = Object.values(FALLBACK_USERS).find((u) => u.id === userId);
+    if (fallback) {
+      return {
+        id: fallback.id,
+        email: fallback.email,
+        name: fallback.name,
+        role: fallback.role,
+      };
     }
 
     throw new ApiError(404, 'User profile not found.');
