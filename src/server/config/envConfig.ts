@@ -8,13 +8,14 @@ const isProduction = process.env.NODE_ENV === 'production';
  * Fails fast at runtime/startup in production if JWT_SECRET is missing or set to a known placeholder.
  */
 export function getJwtSecret(): string {
+  const isProd = process.env.NODE_ENV === 'production';
   let secret = process.env.JWT_SECRET?.trim();
   if (secret && ((secret.startsWith('"') && secret.endsWith('"')) || (secret.startsWith("'") && secret.endsWith("'")))) {
     secret = secret.slice(1, -1).trim();
   }
   const placeholder = 'kilifa_suites_jwt_secret_key_2026_super_secure';
 
-  if (isProduction) {
+  if (isProd) {
     if (!secret || secret === placeholder) {
       throw new Error(
         '[FATAL CONFIGURATION ERROR] In production mode, JWT_SECRET must be explicitly set to a strong, non-default secret key in the environment. Application startup terminated.'
@@ -64,19 +65,13 @@ export function getJwtExpiresIn(): string | number {
  * In development: Allowed only for resilient development prototyping when explicitly enabled.
  */
 export function isMemoryFallbackAllowed(): boolean {
-  // In AI Studio and sandboxed environments where PostgreSQL is not locally hosted,
-  // allow in-memory fallback so the app operates smoothly without throwing 503 errors.
-  if (process.env.ALLOW_MEMORY_FALLBACK === 'true') {
-    return true;
-  }
-  const rawDb = process.env.DATABASE_URL?.trim() || '';
-  const isLocalDb = !rawDb || rawDb.includes('localhost') || rawDb.includes('127.0.0.1');
-  if (isLocalDb) {
-    return true;
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.ALLOW_MEMORY_FALLBACK === 'true';
   }
   if (process.env.ALLOW_MEMORY_FALLBACK === 'false') {
     return false;
   }
+  // In development/test mode, allow in-memory fallback for prototyping
   return true;
 }
 

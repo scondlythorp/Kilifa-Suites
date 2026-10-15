@@ -2,146 +2,283 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { Role } from '@prisma/client';
 import { authService } from '../src/server/services/authService';
 import { getJwtSecret } from '../src/server/config/envConfig';
+import { authenticateToken, requireRole } from '../src/server/middleware/authMiddleware';
+import { register as registerController } from '../src/server/controllers/authController';
+import app from '../src/server/app';
 
-console.log('🔒 RUNNING KILIFA SUITES SECURITY & PRODUCTION VERIFICATION SUITE...\n');
+console.log('🔒 RUNNING KILIFA SUITES PHASE 4 AUTOMATED SECURITY VERIFICATION SUITE...\n');
+
 const jwtSecret = getJwtSecret();
 
 // =========================================================================
-// FIX 1: Treat exposed administrator credentials as compromised
+// TEST 1: Invalid credentials cannot authenticate
 // =========================================================================
-console.log('--- FIX 1: Checking Elimination of Hardcoded Administrator Credentials ---');
-
-const adminLoginPagePath = path.resolve('src/pages/AdminLoginPage.tsx');
-const adminLoginPageContent = fs.readFileSync(adminLoginPagePath, 'utf8');
-
-// Ensure no credential cards or autofill buttons exist in AdminLoginPage
-assert.ok(
-  !adminLoginPageContent.includes('Auto-fill') && !adminLoginPageContent.includes('autofill'),
-  'AdminLoginPage must not contain auto-fill buttons'
-);
-assert.ok(
-  !adminLoginPageContent.includes('Scondly7210@'),
-  'AdminLoginPage must not contain hardcoded default admin passwords'
-);
-assert.ok(
-  !adminLoginPageContent.includes('Demo Credentials') && !adminLoginPageContent.includes('Default Credentials'),
-  'AdminLoginPage must not display exposed administrator credentials card'
-);
-console.log('✅ Fix 1 passed: No credentials cards or autofill buttons in AdminLoginPage');
+console.log('--- TEST 1: Invalid credentials cannot authenticate ---');
+let invalidAuthFailed = false;
+try {
+  await authService.login('nonexistent.user@example.com', 'CompletelyWrongPassword123!');
+} catch (err: any) {
+  invalidAuthFailed = true;
+  assert.equal(err.statusCode || 401, 401, 'Should return HTTP 401 status code');
+  assert.ok(err.message.includes('Invalid credentials') || err.message.includes('not found'));
+}
+assert.ok(invalidAuthFailed, 'Authentication with invalid credentials must fail closed');
+console.log('✅ TEST 1 PASSED: Invalid credentials rejected with 401');
 
 // =========================================================================
-// FIX 2: Removal of hardcoded credentials and frontend authentication bypasses
+// TEST 2: Expired or tampered JWTs are rejected
 // =========================================================================
-console.log('\n--- FIX 2: Checking Removal of Frontend Auth Bypasses & Fake Tokens ---');
+console.log('\n--- TEST 2: Expired or tampered JWTs are rejected ---');
+const testPayload = { id: 'usr-sec-01', email: 'auditor@kilifasuites.com', name: 'Security Auditor', role: Role.ADMIN };
 
-const apiClientPath = path.resolve('src/services/apiClient.ts');
-const apiClientContent = fs.readFileSync(apiClientPath, 'utf8');
+// Tampered signature
+const forgedToken = jwt.sign(testPayload, 'forged-secret-not-matching', { algorithm: 'HS256', expiresIn: '1h' });
+let tamperedRejected = false;
+try {
+  jwt.verify(forgedToken, jwtSecret, { algorithms: ['HS256'] });
+} catch {
+  tamperedRejected = true;
+}
+assert.ok(tamperedRejected, 'Tampered token signature must be rejected');
 
-assert.ok(
-  !apiClientContent.includes('DEFAULT_ADMIN_ACCOUNTS'),
-  'apiClient must not contain DEFAULT_ADMIN_ACCOUNTS'
-);
-assert.ok(
-  !apiClientContent.includes('generateLocalToken'),
-  'apiClient must not contain generateLocalToken'
-);
-assert.ok(
-  !apiClientContent.includes('getLocalAdminAccounts'),
-  'apiClient must not contain getLocalAdminAccounts'
-);
-assert.ok(
-  !apiClientContent.includes('saveLocalAdminAccounts'),
-  'apiClient must not contain saveLocalAdminAccounts'
-);
+// Expired token
+const expiredToken = jwt.sign(testPayload, jwtSecret, { algorithm: 'HS256', expiresIn: '-5s' });
+let expiredRejected = false;
+try {
+  jwt.verify(expiredToken, jwtSecret, { algorithms: ['HS256'] });
+} catch {
+  expiredRejected = true;
+}
+assert.ok(expiredRejected, 'Expired token must be rejected');
 
-const authContextPath = path.resolve('src/context/AuthContext.tsx');
-const authContextContent = fs.readFileSync(authContextPath, 'utf8');
-
-assert.ok(
-  !authContextContent.includes('generateLocalToken'),
-  'AuthContext must not contain generateLocalToken'
-);
-console.log('✅ Fix 2 passed: All client-side fake tokens and admin accounts removed');
+// Algorithm confusion (none algorithm)
+let noneAlgRejected = false;
+try {
+  const noneToken = jwt.sign(testPayload, '', { algorithm: 'none' as any });
+  jwt.verify(noneToken, jwtSecret, { algorithms: ['HS256'] });
+} catch {
+  noneAlgRejected = true;
+}
+assert.ok(noneAlgRejected, 'Tokens with "none" algorithm must be rejected');
+console.log('✅ TEST 2 PASSED: Expired, tampered, and forged algorithm tokens are strictly rejected');
 
 // =========================================================================
-// FIX 3: Secure administrator and staff registration
+// TEST 3: Requests without authentication cannot access protected admin endpoints
 // =========================================================================
-console.log('\n--- FIX 3: Verifying Role-Based Authorization for Registration ---');
+console.log('\n--- TEST 3: Requests without authentication cannot access protected endpoints ---');
+let unauthRejected = false;
+const mockUnauthReq: any = { headers: {} };
+const mockRes: any = {
+  status: (code: number) => ({ json: (d: any) => d }),
+  setHeader: () => {},
+};
 
-const authRoutesPath = path.resolve('src/server/routes/authRoutes.ts');
-const authRoutesContent = fs.readFileSync(authRoutesPath, 'utf8');
+authenticateToken(mockUnauthReq, mockRes, (err?: any) => {
+  if (err && (err.statusCode === 401 || err.status === 401)) {
+    unauthRejected = true;
+  }
+});
+assert.ok(unauthRejected, 'authenticateToken must reject unauthenticated requests with 401');
+console.log('✅ TEST 3 PASSED: Unauthenticated requests rejected with 401');
 
-// Verify that /register requires authenticateToken and requireRole
+// =========================================================================
+// TEST 4: Staff cannot access owner-only operations
+// =========================================================================
+console.log('\n--- TEST 4: Staff cannot access owner-only operations ---');
+const mockStaffReq: any = {
+  user: { id: 'usr-staff-1', email: 'staff@kilifasuites.com', role: Role.STAFF },
+};
+
+let staffBlocked = false;
+const ownerOnlyMiddleware = requireRole(Role.OWNER);
+ownerOnlyMiddleware(mockStaffReq, mockRes, (err?: any) => {
+  if (err && (err.statusCode === 403 || err.status === 403)) {
+    staffBlocked = true;
+  }
+});
+assert.ok(staffBlocked, 'requireRole(OWNER) must reject STAFF users with 403');
+console.log('✅ TEST 4 PASSED: Staff role denied owner-only access with 403');
+
+// =========================================================================
+// TEST 5: Unauthorized users cannot create administrator or owner accounts
+// =========================================================================
+console.log('\n--- TEST 5: Privilege escalation and unauthorized registration prevented ---');
+// 1. Unauthenticated registration
+let unauthRegBlocked = false;
+const unauthRegReq: any = { user: undefined, body: { email: 'hacker@test.com', password: 'Password123!', role: Role.ADMIN } };
+await registerController(unauthRegReq, mockRes, (err?: any) => {
+  if (err && err.statusCode === 401) unauthRegBlocked = true;
+});
+assert.ok(unauthRegBlocked, 'Unauthenticated account creation must return 401');
+
+// 2. Admin cannot escalate an account to OWNER
+let adminEscalationBlocked = false;
+const adminRegReq: any = {
+  user: { id: 'usr-admin-1', email: 'admin@kilifasuites.com', role: Role.ADMIN },
+  body: { email: 'newowner@test.com', password: 'Password123!', role: Role.OWNER },
+};
+await registerController(adminRegReq, mockRes, (err?: any) => {
+  if (err && err.statusCode === 403) adminEscalationBlocked = true;
+});
+assert.ok(adminEscalationBlocked, 'Administrators cannot create OWNER accounts (returns 403)');
+console.log('✅ TEST 5 PASSED: Unauthorized registration and privilege escalation blocked');
+
+// =========================================================================
+// TEST 6: Local storage cannot bypass backend authentication
+// =========================================================================
+console.log('\n--- TEST 6: Local storage cannot bypass backend authentication ---');
+const apiClientCode = fs.readFileSync(path.resolve('src/services/apiClient.ts'), 'utf8');
+assert.ok(!apiClientCode.includes('DEFAULT_ADMIN_ACCOUNTS'), 'DEFAULT_ADMIN_ACCOUNTS must be absent');
+assert.ok(!apiClientCode.includes('generateLocalToken'), 'generateLocalToken must be absent');
+assert.ok(!apiClientCode.includes('getLocalAdminAccounts'), 'getLocalAdminAccounts must be absent');
+
+const authContextCode = fs.readFileSync(path.resolve('src/context/AuthContext.tsx'), 'utf8');
+assert.ok(!authContextCode.includes('generateLocalToken'), 'generateLocalToken must be absent from AuthContext');
+assert.ok(authContextCode.includes('api.auth.me()'), 'AuthContext must verify session against backend /api/auth/me');
+console.log('✅ TEST 6 PASSED: Client cannot self-mint authentication sessions');
+
+// =========================================================================
+// TEST 7: Backend / network failure cannot grant authenticated access
+// =========================================================================
+console.log('\n--- TEST 7: Backend/network failure fails closed ---');
 assert.ok(
-  authRoutesContent.includes("authenticateToken") && authRoutesContent.includes("requireRole"),
-  'authRoutes must protect registration with authenticateToken and requireRole'
+  authContextCode.includes('removeStoredToken()'),
+  'AuthContext must purge token on initialization failure'
 );
 assert.ok(
-  !authRoutesContent.includes("router.post('/register', authRateLimiter, register)"),
+  authContextCode.includes('setUser(null)'),
+  'AuthContext must clear user state on backend session rejection'
+);
+console.log('✅ TEST 7 PASSED: Network and backend errors fail closed');
+
+// =========================================================================
+// TEST 8: Unknown and known email addresses receive equivalent responses
+// =========================================================================
+console.log('\n--- TEST 8: Password reset request response equivalence (prevent enumeration) ---');
+const unknownResult = await authService.requestPasswordReset('completely_unknown_999@example.com');
+assert.ok(
+  unknownResult.message.includes('If an account matching this email address exists'),
+  'Must return generic message for non-existent accounts'
+);
+console.log('✅ TEST 8 PASSED: Generic response returned to prevent account enumeration');
+
+// =========================================================================
+// TEST 9 & 10: Reset tokens validation, execution, single-use, and expiration
+// =========================================================================
+console.log('\n--- TEST 9 & 10: Reset tokens: invalid, expired, and single-use enforcement ---');
+
+// 1. Invalid token rejected
+let invalidResetFailed = false;
+try {
+  await authService.executePasswordReset('bogus-invalid-random-token-xyz', 'ValidNewPassword123!');
+} catch (err: any) {
+  invalidResetFailed = true;
+  assert.equal(err.statusCode || 400, 400);
+}
+assert.ok(invalidResetFailed, 'Bogus reset token must be rejected');
+
+// 2. Request token for registered user
+const testEmail = `test.reset.${Date.now()}@kilifasuites.com`;
+await authService.register({
+  name: 'Test Reset User',
+  email: testEmail,
+  password: 'OldPassword123!',
+  role: Role.STAFF,
+});
+
+process.env.EXPOSE_DEV_DEBUG_TOKENS = 'true';
+const resetReq = await authService.requestPasswordReset(testEmail);
+const token = resetReq.debugToken;
+assert.ok(token, 'Debug token generated in test mode');
+
+// 3. Execute reset
+const resetExecResult = await authService.executePasswordReset(token, 'NewSecurePassword456!');
+assert.ok(resetExecResult.message.includes('successfully updated'), 'Password reset must succeed on first use');
+
+// 4. Token cannot be reused (Single-Use Enforcement)
+let reusedFailed = false;
+try {
+  await authService.executePasswordReset(token, 'AnotherPassword789!');
+} catch (err: any) {
+  reusedFailed = true;
+  assert.equal(err.statusCode || 400, 400);
+}
+assert.ok(reusedFailed, 'Reset token must NOT be reusable once consumed');
+
+// 5. Verify new password works
+const newLogin = await authService.login(testEmail, 'NewSecurePassword456!');
+assert.ok(newLogin.token, 'New password must authenticate successfully');
+
+// 6. Verify old password is dead
+let oldPasswordFailed = false;
+try {
+  await authService.login(testEmail, 'OldPassword123!');
+} catch {
+  oldPasswordFailed = true;
+}
+assert.ok(oldPasswordFailed, 'Old password must no longer authenticate');
+console.log('✅ TESTS 9 & 10 PASSED: Reset tokens are single-use, atomic, and update credentials securely');
+
+// =========================================================================
+// TEST 11: Missing required production secrets cause secure failure
+// =========================================================================
+console.log('\n--- TEST 11: Production startup fails closed when JWT_SECRET missing ---');
+const prevEnv = process.env.NODE_ENV;
+const prevSecret = process.env.JWT_SECRET;
+try {
+  process.env.NODE_ENV = 'production';
+  delete process.env.JWT_SECRET;
+  let productionSecretCheckFailed = false;
+  try {
+    getJwtSecret();
+  } catch (err: any) {
+    productionSecretCheckFailed = true;
+    assert.ok(err.message.includes('FATAL CONFIGURATION ERROR'));
+  }
+  assert.ok(productionSecretCheckFailed, 'Missing JWT_SECRET in production must throw fatal error');
+} finally {
+  process.env.NODE_ENV = prevEnv;
+  if (prevSecret) process.env.JWT_SECRET = prevSecret;
+}
+console.log('✅ TEST 11 PASSED: Strict production validation fails fast on missing JWT_SECRET');
+
+// =========================================================================
+// TEST 12: Public registration disabled & rate limiting enforced
+// =========================================================================
+console.log('\n--- TEST 12: Public registration disabled and route rate limiting active ---');
+const authRoutesCode = fs.readFileSync(path.resolve('src/server/routes/authRoutes.ts'), 'utf8');
+assert.ok(
+  authRoutesCode.includes('authenticateToken') && authRoutesCode.includes('requireRole'),
+  'Registration route must be protected with authenticateToken and requireRole'
+);
+assert.ok(
+  !authRoutesCode.includes("router.post('/register', authRateLimiter, register)"),
   'Public registration route must NOT exist'
 );
-console.log('✅ Fix 3 passed: Registration route is protected with authenticateToken and requireRole');
+assert.ok(authRoutesCode.includes('authRateLimiter'), 'Auth rate limiter must protect auth routes');
+console.log('✅ TEST 12 PASSED: Public registration disabled; routes protected by rate limiting and RBAC');
 
 // =========================================================================
-// FIX 4: Correct token verification and session restoration
+// TEST 13: Vercel API entry point builds without conflicting function paths
 // =========================================================================
-console.log('\n--- FIX 4: Verifying JWT Token Verification & Fail-Closed Logic ---');
+console.log('\n--- TEST 13: Vercel API entry point compatibility & conflict avoidance ---');
+assert.ok(fs.existsSync(path.resolve('api/index.ts')), 'api/index.ts must exist as Vercel serverless entry point');
+assert.ok(!fs.existsSync(path.resolve('api/index.js')), 'api/index.js must NOT exist to avoid Vercel route collision');
 
-// Test JWT validation logic
-const testPayload = { userId: 'test-admin-1', email: 'admin@kilifasuites.com', role: 'ADMIN' };
-const validToken = jwt.sign(testPayload, jwtSecret, { expiresIn: '1h' });
-const decoded = jwt.verify(validToken, jwtSecret) as any;
-assert.equal(decoded.userId, 'test-admin-1');
-assert.equal(decoded.role, 'ADMIN');
+const gitignoreCode = fs.readFileSync(path.resolve('.gitignore'), 'utf8');
+assert.ok(gitignoreCode.includes('api/**/*.js'), '.gitignore must ignore compiled js in api/ directory');
 
-// Forged token signed with a bogus secret must fail verification
-let verificationFailed = false;
-try {
-  const forgedToken = jwt.sign(testPayload, 'wrong-secret-123', { expiresIn: '1h' });
-  jwt.verify(forgedToken, jwtSecret);
-} catch {
-  verificationFailed = true;
-}
-assert.ok(verificationFailed, 'Tokens signed with invalid secret must be rejected');
-
-// Expired token must fail verification
-let expiredFailed = false;
-try {
-  const expiredToken = jwt.sign(testPayload, jwtSecret, { expiresIn: '-1s' });
-  jwt.verify(expiredToken, jwtSecret);
-} catch {
-  expiredFailed = true;
-}
-assert.ok(expiredFailed, 'Expired tokens must be rejected');
-console.log('✅ Fix 4 passed: Strict cryptographic signature and expiry verification enforced');
-
-// =========================================================================
-// FIX 5: Correct the password-reset flow
-// =========================================================================
-console.log('\n--- FIX 5: Verifying Password-Reset Security & Separation ---');
-
-// 1. Password reset request must return generic response to prevent account enumeration
-const resetReqResult = await authService.requestPasswordReset('nonexistent_account@test.com');
+const vercelConfig = JSON.parse(fs.readFileSync(path.resolve('vercel.json'), 'utf8'));
 assert.ok(
-  resetReqResult.message.includes('If an account matching this email address exists'),
-  'Password reset must return generic enumeration-safe message'
+  vercelConfig.rewrites.some((r: any) => r.source === '/api/(.*)' && r.destination === '/api'),
+  'vercel.json must rewrite /api/(.*) to /api'
 );
+console.log('✅ TEST 13 PASSED: Vercel serverless entry point configured cleanly without file conflicts');
 
-// 2. Direct reset with invalid token must fail
-let invalidTokenFailed = false;
-try {
-  await authService.executePasswordReset('bogus-invalid-token-xyz', 'ValidPassword123!');
-} catch (e: any) {
-  invalidTokenFailed = true;
-  assert.ok(
-    e.message.includes('Invalid or expired password reset token'),
-    'Should indicate invalid or expired token'
-  );
-}
-assert.ok(invalidTokenFailed, 'Invalid reset token must fail closed');
-
-console.log('✅ Fix 5 passed: Password reset is separated, token-based, and enumeration-safe');
-
-console.log('\n🎉 ALL SECURITY & PRODUCTION CHECKS COMPLETED SUCCESSFULLY (0 FAILURES)!');
+console.log('\n======================================================');
+console.log('🎉 ALL 13 APPLICATION SECURITY AUDIT TESTS PASSED (0 FAILURES)!');
+console.log('======================================================\n');

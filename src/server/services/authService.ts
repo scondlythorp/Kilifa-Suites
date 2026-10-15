@@ -82,6 +82,7 @@ class AuthService {
           };
 
           const token = jwt.sign(payload, getJwtSecret(), {
+            algorithm: 'HS256',
             expiresIn: getJwtExpiresIn() as any,
           });
 
@@ -123,6 +124,7 @@ class AuthService {
       };
 
       const token = jwt.sign(payload, getJwtSecret(), {
+        algorithm: 'HS256',
         expiresIn: getJwtExpiresIn() as any,
       });
 
@@ -250,6 +252,9 @@ class AuthService {
           });
         } catch (dbErr) {
           console.warn('[PASSWORD RESET] Could not persist token to database:', (dbErr as Error).message);
+          if (process.env.NODE_ENV === 'production') {
+            throw new ApiError(503, 'Database service unavailable. Password reset tokens cannot be persisted.');
+          }
           resetTokenMemoryStore.set(tokenHash, {
             email: raw,
             hashedToken: tokenHash,
@@ -257,6 +262,9 @@ class AuthService {
           });
         }
       } else {
+        if (process.env.NODE_ENV === 'production') {
+          throw new ApiError(503, 'Database service unavailable. Password reset tokens cannot be persisted.');
+        }
         resetTokenMemoryStore.set(tokenHash, {
           email: raw,
           hashedToken: tokenHash,
@@ -284,6 +292,11 @@ class AuthService {
         } catch (dispatchErr) {
           console.warn('[PASSWORD RESET] Email dispatch failed:', (dispatchErr as Error).message);
         }
+      } else if (process.env.NODE_ENV === 'production') {
+        throw new ApiError(
+          503,
+          'Automated email delivery is not configured on this system. Please contact a property owner or system administrator directly to reset your account password.'
+        );
       }
 
       // Expose debug token ONLY in local automated test environment, never in production
@@ -343,7 +356,11 @@ class AuthService {
       };
     }
 
-    // Fallback store check (non-production only)
+    // Fallback store check (strictly non-production only)
+    if (process.env.NODE_ENV === 'production') {
+      throw new ApiError(503, 'Database service is unavailable. Cannot verify password reset token.');
+    }
+
     const memRecord = resetTokenMemoryStore.get(tokenHash);
     if (!memRecord || Date.now() > memRecord.expiresAt) {
       if (memRecord) resetTokenMemoryStore.delete(tokenHash);

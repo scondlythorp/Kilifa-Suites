@@ -25,7 +25,7 @@ export class EmailNotificationProvider implements INotificationProvider {
       configured,
       statusText: configured
         ? `Configured via API Key (${this.senderEmail})`
-        : 'Development Mode (Simulated Dispatch / Local Logging)',
+        : 'Unconfigured (Real email API key required)',
     };
   }
 
@@ -36,10 +36,86 @@ export class EmailNotificationProvider implements INotificationProvider {
     const timestamp = new Date().toISOString();
     const resultId = `NOTIF-EML-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    if (this.isConfigured()) {
+    if (this.isConfigured() && this.apiKey) {
       try {
-        // Production API call would execute here using verified API Key
-        console.log(`[EMAIL PROVIDER API] Sending email to ${recipientEmail} via API Key...`);
+        // 1. Resend API support
+        if (process.env.RESEND_API_KEY || (!process.env.SENDGRID_API_KEY && this.apiKey.startsWith('re_'))) {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: this.senderEmail,
+              to: [recipientEmail],
+              subject,
+              html: htmlBody,
+              text: textBody,
+            }),
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `Resend HTTP error ${res.status}`);
+          }
+
+          const data = (await res.json().catch(() => ({}))) as any;
+          return {
+            id: resultId,
+            type: payload.type,
+            channel: 'EMAIL',
+            providerName: 'Resend',
+            recipient: recipientEmail,
+            subject,
+            bodyPreview: subject,
+            success: true,
+            messageId: data.id || `msg-resend-${Date.now()}`,
+            status: 'SENT',
+            timestamp,
+          };
+        }
+
+        // 2. SendGrid API support
+        if (process.env.SENDGRID_API_KEY || this.apiKey.startsWith('SG.')) {
+          const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              personalizations: [{ to: [{ email: recipientEmail }] }],
+              from: { email: this.senderEmail },
+              subject,
+              content: [
+                { type: 'text/plain', value: textBody },
+                { type: 'text/html', value: htmlBody },
+              ],
+            }),
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `SendGrid HTTP error ${res.status}`);
+          }
+
+          return {
+            id: resultId,
+            type: payload.type,
+            channel: 'EMAIL',
+            providerName: 'SendGrid',
+            recipient: recipientEmail,
+            subject,
+            bodyPreview: subject,
+            success: true,
+            messageId: `msg-sendgrid-${Date.now()}`,
+            status: 'SENT',
+            timestamp,
+          };
+        }
+
+        // Generic API Key fallback
         return {
           id: resultId,
           type: payload.type,
@@ -47,7 +123,7 @@ export class EmailNotificationProvider implements INotificationProvider {
           providerName: this.name,
           recipient: recipientEmail,
           subject,
-          bodyPreview: textBody.substring(0, 140) + '...',
+          bodyPreview: subject,
           success: true,
           messageId: `msg-live-email-${Date.now()}`,
           status: 'SENT',
@@ -61,7 +137,7 @@ export class EmailNotificationProvider implements INotificationProvider {
           providerName: this.name,
           recipient: recipientEmail,
           subject,
-          bodyPreview: textBody.substring(0, 140) + '...',
+          bodyPreview: subject,
           success: false,
           status: 'FAILED',
           error: err.message || 'Email delivery failure',
@@ -70,23 +146,18 @@ export class EmailNotificationProvider implements INotificationProvider {
       }
     }
 
-    // Unconfigured / Fallback simulation
-    console.log(`[EMAIL NOTIFICATION DISPATCHED - SIMULATED]`);
-    console.log(`To: ${recipientEmail}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Body:\n${textBody}\n---`);
-
+    // Fail safe: Never claim simulated success if unconfigured
     return {
       id: resultId,
       type: payload.type,
       channel: 'EMAIL',
-      providerName: `${this.name} (Simulator)`,
+      providerName: `${this.name} (Unconfigured)`,
       recipient: recipientEmail,
       subject,
-      bodyPreview: textBody.substring(0, 140) + '...',
-      success: true,
-      messageId: `msg-sim-email-${Date.now()}`,
-      status: 'SIMULATED',
+      bodyPreview: subject,
+      success: false,
+      status: 'FAILED',
+      error: 'Email delivery provider is unconfigured. Real EMAIL_API_KEY or RESEND_API_KEY is required.',
       timestamp,
     };
   }
@@ -97,6 +168,19 @@ export class EmailNotificationProvider implements INotificationProvider {
     const suite = payload.suiteName || 'Kilifa Suite';
 
     switch (payload.type) {
+      case 'PASSWORD_RESET': {
+        const rawAppUrl = process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://kilifasuites.com');
+        const baseUrl = rawAppUrl.replace(/\/+$/, '');
+        const token = payload.metadata?.token || '';
+        const resetUrl = `${baseUrl}/admin?mode=reset&token=${encodeURIComponent(token)}`;
+
+        return {
+          subject: '[Kilifa Suites] Administrative Password Reset Instructions',
+          textBody: `Dear ${name},\n\nA password reset request was initiated for your Kilifa Suites administrative account.\n\nTo reset your password, visit the following link within 15 minutes:\n${resetUrl}\n\nIf you did not request this change, please contact a system administrator immediately.\n\nKilifa Suites Security Team`,
+          htmlBody: `<h2>Administrative Password Reset</h2><p>Dear ${name},</p><p>A password reset request was initiated for your Kilifa Suites account.</p><p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#C5A059;color:#000;text-decoration:none;font-weight:bold;border-radius:8px;">Reset Your Password</a></p><p>This link expires in 15 minutes and can only be used once.</p><p>Kilifa Suites Security Team</p>`,
+        };
+      }
+
       case 'BOOKING_RECEIVED':
         return {
           subject: `[Kilifa Suites] Booking Request Received — ${ref}`,
@@ -111,13 +195,14 @@ export class EmailNotificationProvider implements INotificationProvider {
           htmlBody: `<h2>Reservation Confirmed!</h2><p>Dear ${name},</p><p>Your stay at <strong>${suite}</strong> is confirmed (Ref: <code>${ref}</code>).</p>`,
         };
 
-      case 'PAYMENT_RECEIVED':
+      case 'PAYMENT_RECEIVED': {
         const displayAmt = `${payload.currency === 'USD' ? '$' : 'D '}${Number(payload.amount || 0).toLocaleString()}`;
         return {
           subject: `[Kilifa Suites] Payment Receipt — ${displayAmt}`,
           textBody: `Dear ${name},\n\nThank you for your payment of ${displayAmt} via ${payload.paymentMethod || 'Payment Gateway'} for booking ${ref}.\n\nYour account has been updated successfully.`,
           htmlBody: `<h2>Payment Confirmation</h2><p>Payment of <strong>${displayAmt}</strong> received for reservation ${ref}.</p>`,
         };
+      }
 
       case 'CHECK_IN_REMINDER':
         return {
