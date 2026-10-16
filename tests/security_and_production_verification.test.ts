@@ -170,6 +170,8 @@ console.log('✅ TEST 8 PASSED: Generic response returned to prevent account enu
 // TEST 9 & 10: Reset tokens validation, execution, single-use, and expiration
 // =========================================================================
 console.log('\n--- TEST 9 & 10: Reset tokens: invalid, expired, and single-use enforcement ---');
+const prevFallback = process.env.ALLOW_MEMORY_FALLBACK;
+process.env.ALLOW_MEMORY_FALLBACK = 'true';
 
 // 1. Invalid token rejected
 let invalidResetFailed = false;
@@ -267,6 +269,11 @@ assert.ok(loserAuthFailed, 'Loser password must NOT authenticate');
 console.log('✅ CONCURRENCY TEST PASSED: Exactly 1 concurrent request succeeded, 1 rejected, password consistent');
 
 console.log('✅ TESTS 9 & 10 PASSED: Reset tokens are single-use, atomic, and update credentials securely');
+if (prevFallback !== undefined) {
+  process.env.ALLOW_MEMORY_FALLBACK = prevFallback;
+} else {
+  delete process.env.ALLOW_MEMORY_FALLBACK;
+}
 
 // =========================================================================
 // TEST 11: Missing required production secrets cause secure failure

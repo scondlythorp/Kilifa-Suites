@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SEOHead } from '../components/seo/SEOHead';
 import { Container } from '../components/common/Container';
 import { Section } from '../components/common/Section';
@@ -9,7 +9,7 @@ import { ImagePlaceholder } from '../components/common/ImagePlaceholder';
 import { MediaCard } from '../components/media/MediaCard';
 import { VideoModal } from '../components/media/VideoModal';
 import { LightboxModal } from '../components/media/LightboxModal';
-import { SUITES_DATA, MEDIA_GALLERY_DATA, BUSINESS_CONFIG } from '../config/business';
+import { SUITES_DATA, MEDIA_GALLERY_DATA, BUSINESS_CONFIG, HOSPITALITY_RATING_CONFIG } from '../config/business';
 import { Media } from '../types';
 import {
   Building2,
@@ -45,7 +45,68 @@ export const HomePage: React.FC = () => {
   const [selectedLightboxMedia, setSelectedLightboxMedia] = useState<Media | null>(null);
   const [heroVideoFailed, setHeroVideoFailed] = useState<boolean>(false);
 
-  // Hero Video Animation State (20-second loop)
+  // Hero background video controller: loops precisely between 00:03 and 00:23
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hasInitializedHeroVideo = useRef<boolean>(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Respect reduced-motion preferences
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      video.pause();
+      return;
+    }
+
+    // Set initial position if metadata is already loaded before effect runs
+    if (video.readyState >= 1 && !hasInitializedHeroVideo.current) {
+      hasInitializedHeroVideo.current = true;
+      try {
+        video.currentTime = 3;
+      } catch {
+        // Handled silently
+      }
+    }
+
+    // Attempt playback gracefully
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay may be restricted by device policy; video stays on poster frame gracefully
+      });
+    }
+  }, []);
+
+  const handleHeroVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (!hasInitializedHeroVideo.current) {
+      hasInitializedHeroVideo.current = true;
+      try {
+        video.currentTime = 3;
+      } catch {
+        // Handled silently
+      }
+    }
+  };
+
+  const handleHeroVideoTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    // Loop precisely from 23s back to 3s
+    if (video.currentTime >= 23) {
+      video.currentTime = 3;
+    } else if (hasInitializedHeroVideo.current && video.currentTime < 2.9) {
+      // Guard against accidental jump back to 0s
+      video.currentTime = 3;
+    }
+  };
+
+  const handleHeroVideoEnded = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    video.currentTime = 3;
+    video.play().catch(() => {});
+  };
   // Featured Suites (using official dataset)
   const featuredSuites = [
     SUITES_DATA[0], // DAR
@@ -136,19 +197,17 @@ export const HomePage: React.FC = () => {
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
           {!heroVideoFailed ? (
             <video
+              ref={videoRef}
               src="/media/videos/kilifa-property-exterior-tour-01.mp4"
               autoPlay
               muted
-              loop
               playsInline
               preload="auto"
               poster="/media/images/kilifa-property-exterior-01.jpeg"
               onError={() => setHeroVideoFailed(true)}
-              onTimeUpdate={(e) => {
-                if (e.currentTarget.currentTime >= 23) {
-                  e.currentTarget.currentTime = 0;
-                }
-              }}
+              onLoadedMetadata={handleHeroVideoLoadedMetadata}
+              onTimeUpdate={handleHeroVideoTimeUpdate}
+              onEnded={handleHeroVideoEnded}
               className="w-full h-full object-cover object-center scale-105"
             />
           ) : (
@@ -223,16 +282,42 @@ export const HomePage: React.FC = () => {
           />
 
           <div className="bg-[#161616] border border-white/10 rounded-2xl p-8 sm:p-12 space-y-8">
-            <div className="max-w-3xl space-y-4">
-              <h3 className="text-xl font-serif italic text-white">
-                Contemporary Accommodation Designed for Every Journey
-              </h3>
-              <p className="text-white/70 text-sm sm:text-base leading-relaxed">
-                Whether you are traveling for business, visiting family, conducting workshops, or seeking an emergency overnight stay in Soma, Kilifa Suites offers an oasis of quiet, air-conditioned comfort with 24/7 solar power backup and uncompromised privacy.
-              </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
+              <div className="max-w-2xl space-y-3">
+                <h3 className="text-xl sm:text-2xl font-serif italic text-white">
+                  Contemporary Accommodation Designed for Every Journey
+                </h3>
+                <p className="text-white/70 text-sm sm:text-base leading-relaxed">
+                  Whether you are traveling for business, visiting family, conducting workshops, or seeking an emergency overnight stay in Soma, Kilifa Suites offers an oasis of quiet, air-conditioned comfort with 24/7 solar power backup and uncompromised privacy.
+                </p>
+              </div>
+
+              {/* Hospitality Rating Display (9.7/10) */}
+              <div
+                className="shrink-0 flex items-center gap-4 px-6 py-4 rounded-xl bg-[#111111] border border-[#C5A059]/30 shadow-xl self-start md:self-auto"
+                aria-label={`Property rating: ${HOSPITALITY_RATING_CONFIG.score} out of ${HOSPITALITY_RATING_CONFIG.scale}`}
+              >
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.25em] text-[#C5A059] font-semibold">
+                    {HOSPITALITY_RATING_CONFIG.label}
+                  </div>
+                  <div className="text-xs text-white/50 mt-0.5">
+                    {HOSPITALITY_RATING_CONFIG.sublabel}
+                  </div>
+                </div>
+                <div className="h-10 w-px bg-white/10" aria-hidden="true" />
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-serif font-bold text-white tracking-tight">
+                    {HOSPITALITY_RATING_CONFIG.score}
+                  </span>
+                  <span className="text-sm font-sans font-medium text-[#C5A059]">
+                    /{HOSPITALITY_RATING_CONFIG.scale}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10">
+            <div className="pt-2">
               <span className="text-[10px] uppercase tracking-[0.25em] text-[#C5A059] font-semibold block mb-6">
                 Accommodations Catering To:
               </span>

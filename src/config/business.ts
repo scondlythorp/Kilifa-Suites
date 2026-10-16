@@ -50,6 +50,31 @@ export const BUSINESS_CONFIG: BusinessConfig = {
   },
 };
 
+/**
+ * Hospitality Rating Display Configuration
+ *
+ * NOTE ON RATING INTEGRITY:
+ * The 9.7/10 rating is a requested presentation value representing the property's
+ * target hospitality standard for guest satisfaction and comfort in Soma.
+ * It is NOT backed by verified historical third-party review platforms or guest survey audits.
+ *
+ * Configurable properties:
+ * - score: Display score (9.7)
+ * - scale: Display scale (10)
+ * - label: Category label
+ * - sublabel: Category subtitle
+ * - verified: Boolean flag indicating whether customer audit confirmation is complete
+ * - auditNote: Internal note for management review prior to public release
+ */
+export const HOSPITALITY_RATING_CONFIG = {
+  score: 9.7,
+  scale: 10,
+  label: 'Hospitality Rating',
+  sublabel: 'Guest Comfort Benchmark',
+  verified: false, // Flagged: Requires formal guest audit confirmation before public commercial release
+  auditNote: 'Requested presentation score (9.7/10). Awaiting verified guest feedback audit.',
+};
+
 export const HOUSES_DATA = [
   {
     houseNumber: 1,
