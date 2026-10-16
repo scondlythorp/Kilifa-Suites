@@ -278,7 +278,7 @@ class AuthService {
 
       if (emailConfigured) {
         try {
-          await notificationManager.dispatch(
+          const dispatchResults = await notificationManager.dispatch(
             {
               type: 'PASSWORD_RESET',
               recipient: { email: raw, name: 'Administrative User' },
@@ -289,8 +289,28 @@ class AuthService {
             },
             ['EMAIL']
           );
-        } catch (dispatchErr) {
-          console.warn('[PASSWORD RESET] Email dispatch failed:', (dispatchErr as Error).message);
+
+          const emailResult = dispatchResults.find((r) => r.channel === 'EMAIL');
+          if (emailResult && !emailResult.success) {
+            console.error('[PASSWORD RESET] Email dispatch returned failed status:', emailResult.error);
+            if (process.env.NODE_ENV === 'production') {
+              throw new ApiError(
+                503,
+                'Unable to deliver password reset instructions at this time. Please try again later or contact support.'
+              );
+            }
+          }
+        } catch (dispatchErr: any) {
+          console.error('[PASSWORD RESET] Email dispatch error:', dispatchErr.message);
+          if (dispatchErr instanceof ApiError) {
+            throw dispatchErr;
+          }
+          if (process.env.NODE_ENV === 'production') {
+            throw new ApiError(
+              503,
+              'Unable to deliver password reset instructions at this time. Please try again later or contact support.'
+            );
+          }
         }
       } else if (process.env.NODE_ENV === 'production') {
         throw new ApiError(
@@ -328,28 +348,42 @@ class AuthService {
     let targetEmail: string | null = null;
 
     if (isDatabaseConnected()) {
-      const tokenRecord = await prisma.passwordResetToken.findUnique({
-        where: { tokenHash },
-      });
-
-      if (!tokenRecord || tokenRecord.used || new Date() > tokenRecord.expiresAt) {
-        throw new ApiError(400, 'Invalid or expired password reset token. Please request a new reset link.');
-      }
-
-      targetEmail = tokenRecord.email;
+      const now = new Date();
       const newHash = await bcrypt.hash(newPassword.trim(), 10);
 
-      // Atomic update of user password and token status
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { email: targetEmail },
+      // Database-enforced atomic conditional claim inside interactive transaction
+      // updateMany ensures that if two requests concurrently attempt redemption,
+      // only the one that successfully transitions used from false -> true will match count === 1.
+      // The second request sees used = true (or expired) and fails with count === 0.
+      await prisma.$transaction(async (tx) => {
+        const claimResult = await tx.passwordResetToken.updateMany({
+          where: {
+            tokenHash,
+            used: false,
+            expiresAt: { gt: now },
+          },
+          data: {
+            used: true,
+          },
+        });
+
+        if (claimResult.count !== 1) {
+          throw new ApiError(400, 'Invalid or expired password reset token. Please request a new reset link.');
+        }
+
+        const tokenRecord = await tx.passwordResetToken.findUnique({
+          where: { tokenHash },
+        });
+
+        if (!tokenRecord) {
+          throw new ApiError(400, 'Invalid or expired password reset token. Please request a new reset link.');
+        }
+
+        await tx.user.update({
+          where: { email: tokenRecord.email },
           data: { password: newHash },
-        }),
-        prisma.passwordResetToken.update({
-          where: { id: tokenRecord.id },
-          data: { used: true },
-        }),
-      ]);
+        });
+      });
 
       return {
         message: 'Password has been successfully updated. You may now sign in with your new credentials.',
@@ -361,11 +395,15 @@ class AuthService {
       throw new ApiError(503, 'Database service is unavailable. Cannot verify password reset token.');
     }
 
+    // Atomic claim in memory: delete immediately BEFORE any asynchronous await
     const memRecord = resetTokenMemoryStore.get(tokenHash);
     if (!memRecord || Date.now() > memRecord.expiresAt) {
       if (memRecord) resetTokenMemoryStore.delete(tokenHash);
       throw new ApiError(400, 'Invalid or expired password reset token. Please request a new reset link.');
     }
+
+    // Synchronously consume token before hashing
+    resetTokenMemoryStore.delete(tokenHash);
 
     targetEmail = memRecord.email;
     const newHash = await bcrypt.hash(newPassword.trim(), 10);
@@ -373,9 +411,6 @@ class AuthService {
     if (FALLBACK_USERS[targetEmail]) {
       FALLBACK_USERS[targetEmail].passwordHash = newHash;
     }
-
-    // Invalidate immediately
-    resetTokenMemoryStore.delete(tokenHash);
 
     return {
       message: 'Password has been successfully updated. You may now sign in with your new credentials.',

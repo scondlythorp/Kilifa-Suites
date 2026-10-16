@@ -221,6 +221,51 @@ try {
   oldPasswordFailed = true;
 }
 assert.ok(oldPasswordFailed, 'Old password must no longer authenticate');
+
+// 7. CONCURRENCY TEST: Simultaneous redemption of the exact same reset token
+console.log('--- Testing simultaneous concurrent redemption of reset token ---');
+const concurrencyEmail = `concurrent.reset.${Date.now()}@kilifasuites.com`;
+await authService.register({
+  name: 'Concurrent User',
+  email: concurrencyEmail,
+  password: 'InitialPassword123!',
+  role: Role.STAFF,
+});
+
+const concurrentResetReq = await authService.requestPasswordReset(concurrencyEmail);
+const concurrentToken = concurrentResetReq.debugToken!;
+assert.ok(concurrentToken, 'Concurrent test token generated');
+
+// Fire two concurrent executePasswordReset calls simultaneously
+const [attempt1, attempt2] = await Promise.allSettled([
+  authService.executePasswordReset(concurrentToken, 'WinnerPasswordA1!'),
+  authService.executePasswordReset(concurrentToken, 'WinnerPasswordB2!'),
+]);
+
+const fulfilled = [attempt1, attempt2].filter((r) => r.status === 'fulfilled');
+const rejected = [attempt1, attempt2].filter((r) => r.status === 'rejected');
+
+assert.equal(fulfilled.length, 1, 'Exactly one concurrent request must succeed');
+assert.equal(rejected.length, 1, 'Exactly one concurrent request must be rejected');
+
+const rejectedReason = (rejected[0] as PromiseRejectedResult).reason;
+assert.equal(rejectedReason.statusCode || 400, 400, 'Rejected request must receive 400 Bad Request');
+
+const winnerPass = attempt1.status === 'fulfilled' ? 'WinnerPasswordA1!' : 'WinnerPasswordB2!';
+const loserPass = attempt1.status === 'fulfilled' ? 'WinnerPasswordB2!' : 'WinnerPasswordA1!';
+
+const validAuth = await authService.login(concurrencyEmail, winnerPass);
+assert.ok(validAuth.token, 'Winner password must authenticate successfully');
+
+let loserAuthFailed = false;
+try {
+  await authService.login(concurrencyEmail, loserPass);
+} catch {
+  loserAuthFailed = true;
+}
+assert.ok(loserAuthFailed, 'Loser password must NOT authenticate');
+console.log('✅ CONCURRENCY TEST PASSED: Exactly 1 concurrent request succeeded, 1 rejected, password consistent');
+
 console.log('✅ TESTS 9 & 10 PASSED: Reset tokens are single-use, atomic, and update credentials securely');
 
 // =========================================================================

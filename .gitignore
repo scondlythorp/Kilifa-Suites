@@ -8,3 +8,4 @@ coverage/
 !.env.example
 api/**/*.js
 api/index.js
+*.patch
