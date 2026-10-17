@@ -140,10 +140,44 @@ export const AdminLoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Security Badge */}
-        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-mono">
-          <ShieldCheck className="w-4 h-4 text-[#C5A059]" />
-          <span>Authorized Personnel Only</span>
+        {/* Security Badge & Dev Helper */}
+        <div className="flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-mono">
+            <ShieldCheck className="w-4 h-4 text-[#C5A059]" />
+            <span>Authorized Personnel Only</span>
+          </div>
+          {import.meta.env.DEV && (
+            <div className="w-full bg-[#C5A059]/10 border border-[#C5A059]/30 rounded-xl p-3 text-center space-y-1.5">
+              <p className="text-[11px] text-[#C5A059] font-mono font-medium">Development Access</p>
+              <p className="text-xs text-white/80 font-mono">
+                Password: <span className="text-white font-semibold">Kilifa2026!</span>
+              </p>
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginIdentifier('admin@kilifasuites.com');
+                    setLoginPassword('Kilifa2026!');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-1 rounded bg-[#C5A059]/20 hover:bg-[#C5A059]/30 text-[11px] text-[#C5A059] cursor-pointer font-mono"
+                >
+                  admin@kilifasuites.com
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginIdentifier('gambiantechie4@gmail.com');
+                    setLoginPassword('Kilifa2026!');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-1 rounded bg-[#C5A059]/20 hover:bg-[#C5A059]/30 text-[11px] text-[#C5A059] cursor-pointer font-mono"
+                >
+                  gambiantechie4@gmail.com
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Alerts */}

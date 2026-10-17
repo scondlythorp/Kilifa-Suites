@@ -68,10 +68,7 @@ export function isMemoryFallbackAllowed(): boolean {
   if (process.env.NODE_ENV === 'production') {
     return process.env.ALLOW_MEMORY_FALLBACK === 'true';
   }
-  if (process.env.ALLOW_MEMORY_FALLBACK === 'false') {
-    return false;
-  }
-  // In development/test mode, allow in-memory fallback for prototyping
+  // In development/test mode, allow in-memory fallback for prototyping and preview
   return true;
 }
 

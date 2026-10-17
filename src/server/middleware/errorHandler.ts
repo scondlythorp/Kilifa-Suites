@@ -20,9 +20,14 @@ export const errorHandler = (
   _next: NextFunction
 ) => {
   const timestamp = new Date().toISOString();
-  console.error(`[API ERROR ${timestamp}] ${req.method} ${req.originalUrl}:`, err);
 
   if (err instanceof ApiError) {
+    if (err.statusCode >= 500) {
+      console.error(`[API ERROR ${timestamp}] ${req.method} ${req.originalUrl} (${err.statusCode}):`, err);
+    } else {
+      console.warn(`[API WARN ${timestamp}] ${req.method} ${req.originalUrl} (${err.statusCode}): ${err.message}`);
+    }
+
     return res.status(err.statusCode).json({
       status: 'error',
       statusCode: err.statusCode,
@@ -34,6 +39,7 @@ export const errorHandler = (
   }
 
   // Fallback for unhandled internal server errors
+  console.error(`[API UNHANDLED ERROR ${timestamp}] ${req.method} ${req.originalUrl}:`, err);
   const isProduction = process.env.NODE_ENV === 'production';
   return res.status(500).json({
     status: 'error',

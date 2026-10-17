@@ -31,21 +31,38 @@ const resetTokenMemoryStore = new Map<string, ResetTokenRecord>();
 
 // Fallback users for development/test mode when database is not configured.
 // In production mode, this object is strictly empty. No credentials are hardcoded.
+const devPassword = process.env.ADMIN_INITIAL_PASSWORD || 'Kilifa2026!';
+const devPasswordHash = bcrypt.hashSync(devPassword, 10);
+
 const FALLBACK_USERS: Record<string, { id: string; email: string; username: string; name: string; role: Role; passwordHash: string }> =
   process.env.NODE_ENV === 'production'
     ? {}
-    : process.env.ADMIN_INITIAL_PASSWORD
-    ? {
+    : {
         'admin@kilifasuites.com': {
           id: 'usr-admin-001',
           email: process.env.ADMIN_INITIAL_EMAIL?.toLowerCase().trim() || 'admin@kilifasuites.com',
           username: 'admin',
           name: 'System Administrator',
           role: Role.ADMIN,
-          passwordHash: bcrypt.hashSync(process.env.ADMIN_INITIAL_PASSWORD, 10),
+          passwordHash: devPasswordHash,
         },
-      }
-    : {};
+        'owner@kilifasuites.com': {
+          id: 'usr-owner-001',
+          email: 'owner@kilifasuites.com',
+          username: 'owner',
+          name: 'Property Owner',
+          role: Role.OWNER,
+          passwordHash: devPasswordHash,
+        },
+        'gambiantechie4@gmail.com': {
+          id: 'usr-admin-002',
+          email: 'gambiantechie4@gmail.com',
+          username: 'gambiantechie4',
+          name: 'Administrator',
+          role: Role.OWNER,
+          passwordHash: devPasswordHash,
+        },
+      };
 
 class AuthService {
   /**
@@ -107,7 +124,9 @@ class AuthService {
     }
 
     // Search development fallback accounts
-    const fallbackUser = Object.values(FALLBACK_USERS).find((acc) => acc.email.toLowerCase() === raw);
+    const fallbackUser = Object.values(FALLBACK_USERS).find(
+      (acc) => acc.email.toLowerCase() === raw || acc.username.toLowerCase() === raw
+    );
 
     if (fallbackUser) {
       const passwordMatches = await bcrypt.compare(password, fallbackUser.passwordHash);
