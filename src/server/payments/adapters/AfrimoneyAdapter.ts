@@ -57,7 +57,24 @@ export class AfrimoneyAdapter implements IPaymentAdapter {
       }
     }
 
-    // Sandbox fallback
+    // In production, unconfigured gateways fail closed safely
+    if (process.env.NODE_ENV === 'production') {
+      return {
+        paymentId: '',
+        bookingId: req.bookingId,
+        bookingReference: req.bookingReference,
+        amount: req.amount,
+        paidAmount: 0,
+        currency: req.currency || 'GMD',
+        provider: 'AFRIMONEY',
+        status: 'FAILED',
+        transactionRef: txRef,
+        instructions: 'Afrimoney Mobile Money gateway is currently unconfigured or unavailable. Please contact reception to settle with cash at check-in or bank transfer.',
+        requiresCustomerAction: false,
+      };
+    }
+
+    // Sandbox fallback for development/testing only
     const isPartial = paidAmount < req.amount;
     return {
       paymentId: '',

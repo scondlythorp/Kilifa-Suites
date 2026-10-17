@@ -63,6 +63,23 @@ export class VisaCardAdapter implements IPaymentAdapter {
       }
     }
 
+    // In production, unconfigured gateways fail closed safely
+    if (process.env.NODE_ENV === 'production') {
+      return {
+        paymentId: '',
+        bookingId: req.bookingId,
+        bookingReference: req.bookingReference,
+        amount: req.amount,
+        paidAmount: 0,
+        currency: req.currency || 'GMD',
+        provider: 'VISA_CARD',
+        status: 'FAILED',
+        transactionRef: txRef,
+        instructions: 'Card payment gateway is currently unconfigured or undergoing maintenance. Please contact reception to settle with cash at check-in or bank transfer.',
+        requiresCustomerAction: false,
+      };
+    }
+
     const isPartial = paidAmount < req.amount;
     return {
       paymentId: '',

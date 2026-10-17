@@ -12,6 +12,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "tsx tests/currency_and_booking.test.ts && tsx tests/regression_suite.test.ts && tsx tests/security_and_production_verification.test.ts",
+    "admin:bootstrap": "tsx scripts/bootstrapAdmin.ts",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"

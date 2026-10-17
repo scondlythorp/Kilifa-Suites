@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { bookingService } from '../services/bookingService';
 import { ApiError } from '../middleware/errorHandler';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -101,8 +102,11 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const getBookingById = async (req: Request, res: Response, next: NextFunction) => {
+export const getBookingById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      throw new ApiError(401, 'Authentication required to access booking details.');
+    }
     const { id } = req.params;
     const booking = await bookingService.getBookingById(id);
     res.status(200).json({

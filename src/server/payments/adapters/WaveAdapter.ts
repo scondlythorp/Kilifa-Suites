@@ -59,7 +59,24 @@ export class WaveAdapter implements IPaymentAdapter {
       }
     }
 
-    // Fallback / Sandbox Mode when merchant keys are absent
+    // In production, unconfigured gateways fail closed safely
+    if (process.env.NODE_ENV === 'production') {
+      return {
+        paymentId: '',
+        bookingId: req.bookingId,
+        bookingReference: req.bookingReference,
+        amount: req.amount,
+        paidAmount: 0,
+        currency: req.currency || 'GMD',
+        provider: 'WAVE',
+        status: 'FAILED',
+        transactionRef: txRef,
+        instructions: 'Wave Mobile Money gateway is currently unconfigured or unavailable. Please contact reception to settle with cash at check-in or bank transfer.',
+        requiresCustomerAction: false,
+      };
+    }
+
+    // Fallback / Sandbox Mode for development/preview testing only
     return {
       paymentId: '',
       bookingId: req.bookingId,

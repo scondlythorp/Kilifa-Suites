@@ -331,6 +331,89 @@ assert.ok(
 );
 console.log('✅ TEST 13 PASSED: Vercel serverless entry point configured cleanly without file conflicts');
 
+// =========================================================================
+// TEST 14: Insecure Direct Object Reference (IDOR) protection on Bookings API
+// =========================================================================
+console.log('\n--- TEST 14: Insecure Direct Object Reference (IDOR) protection on Bookings API ---');
+const bookingRoutesCode = fs.readFileSync(path.resolve('src/server/routes/bookingRoutes.ts'), 'utf8');
+assert.ok(
+  bookingRoutesCode.includes("router.get(\n  '/:id',\n  authenticateToken,\n  requireRole") ||
+  bookingRoutesCode.includes("'/:id'") && bookingRoutesCode.includes("requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF)"),
+  'GET /api/bookings/:id must be protected with both authenticateToken and requireRole'
+);
+
+// Verify unauthorized user role is rejected by middleware
+const guestReq: any = {
+  user: { id: 'usr-guest-01', email: 'guest@example.com', role: Role.GUEST },
+};
+let idorBlocked = false;
+const bookingRoleMiddleware = requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF);
+bookingRoleMiddleware(guestReq, mockRes, (err?: any) => {
+  if (err && (err.statusCode === 403 || err.status === 403)) {
+    idorBlocked = true;
+  }
+});
+assert.ok(idorBlocked, 'GUEST role must be forbidden (HTTP 403) from querying arbitrary bookings by ID');
+console.log('✅ TEST 14 PASSED: IDOR eliminated; GET /api/bookings/:id strictly requires authorized role');
+
+// =========================================================================
+// TEST 15: Payment adapters fail closed safely in production
+// =========================================================================
+console.log('\n--- TEST 15: Payment adapters fail closed safely in production ---');
+import { WaveAdapter } from '../src/server/payments/adapters/WaveAdapter';
+import { AfrimoneyAdapter } from '../src/server/payments/adapters/AfrimoneyAdapter';
+
+const prevNodeEnv = process.env.NODE_ENV;
+try {
+  process.env.NODE_ENV = 'production';
+  delete process.env.WAVE_API_KEY;
+  delete process.env.AFRIMONEY_API_KEY;
+
+  const waveAdapter = new WaveAdapter();
+  const afriAdapter = new AfrimoneyAdapter();
+
+  const mockReq: any = {
+    bookingId: 'bkg-test',
+    bookingReference: 'KS-123456',
+    amount: 5000,
+    paidAmount: 5000,
+    currency: 'GMD',
+  };
+
+  const waveRes = await waveAdapter.initiatePayment(mockReq);
+  assert.equal(waveRes.status, 'FAILED', 'Unconfigured Wave adapter must return FAILED in production');
+  assert.equal(waveRes.paidAmount, 0, 'Unconfigured Wave adapter must report 0 paid amount');
+
+  const afriRes = await afriAdapter.initiatePayment(mockReq);
+  assert.equal(afriRes.status, 'FAILED', 'Unconfigured Afrimoney adapter must return FAILED in production');
+  assert.equal(afriRes.paidAmount, 0, 'Unconfigured Afrimoney adapter must report 0 paid amount');
+} finally {
+  process.env.NODE_ENV = prevNodeEnv;
+}
+console.log('✅ TEST 15 PASSED: Unconfigured payment gateways fail closed in production without simulation');
+
+// =========================================================================
+// TEST 16: Concurrency row locking & Admin bootstrap tool verification
+// =========================================================================
+console.log('\n--- TEST 16: Concurrency row-level locking & Admin bootstrap script ---');
+const bookingServiceCode = fs.readFileSync(path.resolve('src/server/services/bookingService.ts'), 'utf8');
+assert.ok(
+  bookingServiceCode.includes('FOR UPDATE'),
+  'bookingService must acquire exclusive row lock (FOR UPDATE) inside transaction to serialize reservations'
+);
+
+assert.ok(
+  fs.existsSync(path.resolve('scripts/bootstrapAdmin.ts')),
+  'scripts/bootstrapAdmin.ts must exist for secure administrative bootstrapping'
+);
+
+const packageJson = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8'));
+assert.ok(
+  packageJson.scripts['admin:bootstrap'],
+  'package.json must contain admin:bootstrap command'
+);
+console.log('✅ TEST 16 PASSED: Concurrency row-locking active and admin bootstrap tool verified');
+
 console.log('\n======================================================');
-console.log('🎉 ALL 13 APPLICATION SECURITY AUDIT TESTS PASSED (0 FAILURES)!');
+console.log('🎉 ALL 16 APPLICATION SECURITY AUDIT TESTS PASSED (0 FAILURES)!');
 console.log('======================================================\n');

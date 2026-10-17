@@ -23,8 +23,13 @@ router.get(
   getAllBookings
 );
 
-// GET /api/bookings/:id - Protected
-router.get('/:id', authenticateToken, getBookingById);
+// GET /api/bookings/:id - Protected: Owner, Admin, Receptionist, Staff access only
+router.get(
+  '/:id',
+  authenticateToken,
+  requireRole(Role.OWNER, Role.ADMIN, Role.RECEPTIONIST, Role.STAFF),
+  getBookingById
+);
 
 // PATCH /api/bookings/:id/status - Update booking status
 router.patch(

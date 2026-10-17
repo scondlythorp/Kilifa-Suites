@@ -31,16 +31,20 @@ export function createExpressApp() {
   app.use(securityHeaders);
 
   const rawCorsOrigin = process.env.CORS_ORIGIN;
-  const allowedOrigins = rawCorsOrigin
+  const configuredOrigins = rawCorsOrigin
     ? rawCorsOrigin.split(',').map((s) => s.trim()).filter(Boolean)
-    : [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5173',
-        'https://kilifasuites.com',
-        'https://www.kilifasuites.com',
-      ];
+    : [];
+
+  // Explicit production allowlist supporting current and future official Gambian domains
+  const defaultProductionOrigins = [
+    'https://kilifasuites.com',
+    'https://www.kilifasuites.com',
+    'https://kilifasuites.gm',
+    'https://www.kilifasuites.gm',
+    'https://kilifa-suites.vercel.app',
+  ];
+
+  const allowedOrigins = Array.from(new Set([...defaultProductionOrigins, ...configuredOrigins]));
 
   app.use(
     cors({
@@ -52,24 +56,23 @@ export function createExpressApp() {
           return callback(null, true);
         }
 
-        // In non-production, allow all localhost and 127.0.0.1 variations
-        if (
-          process.env.NODE_ENV !== 'production' &&
-          (/^http:\/\/localhost(:\d+)?$/.test(origin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin))
-        ) {
+        // Allow official project-specific Vercel preview deployments (e.g. https://kilifa-suites-xyz-scondly.vercel.app)
+        if (/^https:\/\/kilifa-suites(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) {
           return callback(null, true);
         }
 
-        // Allow Cloud Run, Google preview domains, and Vercel deployments
-        if (
-          origin.endsWith('.run.app') ||
-          origin.endsWith('.google.com') ||
-          origin.endsWith('.googleusercontent.com') ||
-          origin.endsWith('.vercel.app')
-        ) {
-          return callback(null, true);
+        // In non-production environments only: allow local development and Google sandbox previews
+        if (process.env.NODE_ENV !== 'production') {
+          if (
+            /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+            /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin) ||
+            origin.endsWith('.run.app') ||
+            origin.endsWith('.google.com') ||
+            origin.endsWith('.googleusercontent.com')
+          ) {
+            return callback(null, true);
+          }
         }
-
         // In non-production environments, allow any origin to ensure preview works seamlessly
         if (process.env.NODE_ENV !== 'production') {
           return callback(null, true);
